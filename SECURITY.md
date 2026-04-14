@@ -23,5 +23,5 @@ This package handles age verification data with the following security considera
 - **Raw age data** (`AgeSignalsResult`) is kept in memory only — never persisted to disk
 - **Behavior flags** (`AgeRestrictionFlags`) are cached in PlayerPrefs — contain no raw age data
 - **Analytics events** log only binary success/failure — no age information is transmitted
-- **Firebase integration** is optional and gated behind `AGESIGNALS_FIREBASE` scripting define
+- **Firebase integration** is optional and gated behind `BIZSIM_FIREBASE` scripting define
 - **ProGuard rules** are embedded to prevent reverse engineering of the Java bridge

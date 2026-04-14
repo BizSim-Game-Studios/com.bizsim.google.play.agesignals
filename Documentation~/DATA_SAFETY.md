@@ -11,7 +11,7 @@ This document describes the data practices of the **Google Play Age Signals Brid
 | Verification status | Yes (from Google Play API) | No | Age-appropriate content gating | **In-memory only** — never persisted to disk |
 | Install ID | Yes (for supervised accounts only) | No | Supervised account identification | **In-memory only** — never persisted to disk |
 | Restriction flags (behavior booleans) | Derived locally | No | Feature gating decisions | `PlayerPrefs`, auto-expires after **24 hours** |
-| API call success/error | Yes (if `AGESIGNALS_FIREBASE` enabled) | Firebase Analytics | Technical monitoring | Per Firebase Analytics retention policy |
+| API call success/error | Yes (if `BIZSIM_FIREBASE` enabled) | Firebase Analytics | Technical monitoring | Per Firebase Analytics retention policy |
 
 ## Data NOT Collected
 
@@ -38,7 +38,7 @@ expired and deleted after 24 hours to comply with Google's policy against
 long-term storage of age-signal-derived data.
 
 ### 3. Analytics — No Age Data
-When Firebase Analytics integration is enabled (`AGESIGNALS_FIREBASE` define symbol),
+When Firebase Analytics integration is enabled (`BIZSIM_FIREBASE` define symbol),
 the only event logged is `age_signals_api_call` with a single parameter: `result`
 containing the string `"success"` or `"error"`. No age data, verification status,
 or restriction flags are included in analytics events.

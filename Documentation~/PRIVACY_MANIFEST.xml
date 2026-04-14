@@ -39,7 +39,7 @@
       </description>
     </data-type>
 
-    <!-- Analytics event (optional, requires AGESIGNALS_FIREBASE) -->
+    <!-- Analytics event (optional, requires BIZSIM_FIREBASE) -->
     <data-type category="app-activity" subcategory="app-interactions" optional="true">
       <collected>true</collected>
       <shared>true</shared>
@@ -49,7 +49,7 @@
       <purpose>analytics</purpose>
       <description>
         Binary success/error string logged via Firebase Analytics.
-        No age data included. Only active when AGESIGNALS_FIREBASE define is set.
+        No age data included. Only active when BIZSIM_FIREBASE define is set.
       </description>
     </data-type>
   </data-collection>
