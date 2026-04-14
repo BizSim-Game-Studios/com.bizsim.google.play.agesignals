@@ -1,0 +1,19 @@
+{
+  "name": "BizSim.Google.Play.AgeSignals.Editor",
+  "rootNamespace": "BizSim.Google.Play.AgeSignals.Editor",
+  "references": [
+    "BizSim.Google.Play.AgeSignals",
+    "BizSim.GPlay.EditorCore"
+  ],
+  "includePlatforms": [
+    "Editor"
+  ],
+  "excludePlatforms": [],
+  "allowUnsafeCode": false,
+  "overrideReferences": false,
+  "precompiledReferences": [],
+  "autoReferenced": true,
+  "defineConstraints": [],
+  "versionDefines": [],
+  "noEngineReferences": false
+}
