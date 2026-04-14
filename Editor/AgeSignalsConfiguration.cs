@@ -1,4 +1,4 @@
-using BizSim.GPlay.EditorCore;
+using BizSim.Google.Play.Editor.Core;
 using UnityEditor;
 using UnityEngine;
 

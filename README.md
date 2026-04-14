@@ -38,7 +38,7 @@ This package provides a complete Java-to-C# bridge for querying age verification
 - **Raw age data** (`AgeSignalsResult`) is kept **in memory only** — never persisted to disk
 - **Only behavior flags** (`AgeRestrictionFlags`) are saved to `PlayerPrefs` — contains zero age data
 - **Analytics events** log only technical success/failure — no age info transmitted
-- **Firebase integration** is optional via `AGESIGNALS_FIREBASE` scripting define symbol
+- **Firebase integration** is optional via `BIZSIM_FIREBASE` scripting define symbol
 
 ## Installation
 
@@ -69,7 +69,7 @@ This package provides a complete Java-to-C# bridge for querying age verification
 ### After Installation
 
 1. In Unity Editor: **Assets → External Dependency Manager → Android Resolver → Force Resolve**
-2. (Optional) Add `AGESIGNALS_FIREBASE` to **Scripting Define Symbols** for Firebase Analytics integration
+2. (Optional) Add `BIZSIM_FIREBASE` to **Scripting Define Symbols** for Firebase Analytics integration
 3. **ProGuard rules are applied automatically** — the package includes a `.androidlib` that injects keep rules into your build
 
 ## Quick Start Tutorial

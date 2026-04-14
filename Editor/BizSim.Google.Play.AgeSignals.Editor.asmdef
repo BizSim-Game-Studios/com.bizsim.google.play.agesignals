@@ -3,7 +3,7 @@
   "rootNamespace": "BizSim.Google.Play.AgeSignals.Editor",
   "references": [
     "BizSim.Google.Play.AgeSignals",
-    "BizSim.GPlay.EditorCore"
+    "BizSim.Google.Play.Editor.Core"
   ],
   "includePlatforms": [
     "Editor"
