@@ -1,10 +1,12 @@
 # Google Play Age Signals Bridge
 
+> ⚠️ **BETA** — This package wraps the Google Play Age Signals API which is currently in beta (v0.0.3). The upstream API surface may change without notice. Use in production at your own risk.
+
 [![Unity 6000.0+](https://img.shields.io/badge/Unity-6000.0%2B-blue.svg)](https://unity.com)
 [![License: MIT](https://img.shields.io/badge/License-MIT-green.svg)](LICENSE.md)
 [![Version](https://img.shields.io/badge/Version-1.0.0-orange.svg)](CHANGELOG.md)
 
-> **⚠️ Unofficial package.** This is a community-built Unity bridge for the [Google Play Age Signals API](https://developer.android.com/games/agesignals). It is **not** an official Google product. The underlying Age Signals SDK (v0.0.2) is currently in **beta**.
+> **⚠️ Unofficial package.** This is a community-built Unity bridge for the [Google Play Age Signals API](https://developer.android.com/games/agesignals). It is **not** an official Google product. The underlying Age Signals SDK (v0.0.3) is currently in **beta**.
 
 **Package:** `com.bizsim.google.play.agesignals`
 **Version:** 1.0.0 (Initial Release)
