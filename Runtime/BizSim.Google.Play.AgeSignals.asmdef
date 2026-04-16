@@ -2,7 +2,7 @@
   "name": "BizSim.Google.Play.AgeSignals",
   "rootNamespace": "BizSim.Google.Play.AgeSignals",
   "references": [],
-  "includePlatforms": ["Android", "Editor"],
+  "includePlatforms": [],
   "excludePlatforms": [],
   "allowUnsafeCode": false,
   "overrideReferences": false,
