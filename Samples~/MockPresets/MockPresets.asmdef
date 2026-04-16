@@ -1,0 +1,18 @@
+{
+  "name": "BizSim.Google.Play.AgeSignals.Samples.MockPresets",
+  "rootNamespace": "BizSim.Google.Play.AgeSignals.Samples",
+  "references": [
+    "BizSim.Google.Play.AgeSignals"
+  ],
+  "includePlatforms": [
+    "Editor"
+  ],
+  "excludePlatforms": [],
+  "allowUnsafeCode": false,
+  "overrideReferences": false,
+  "precompiledReferences": [],
+  "autoReferenced": false,
+  "defineConstraints": [],
+  "versionDefines": [],
+  "noEngineReferences": false
+}
