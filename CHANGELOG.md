@@ -5,6 +5,12 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [1.1.0] - 2026-04-17
+
+### Added
+- **K8 PackageVersion schema unification (Plan G).** Three new `public const string` fields on `PackageVersion`: `NativeSdkVersion` (`"0.0.3"`), `NativeSdkLabel` (`"Play Core (age-signals beta)"`), `NativeSdkArtifactCoord` (`"com.google.android.play:age-signals:0.0.3"`). First introduction of native SDK version metadata for this package — prior versions exposed no such field. Dashboard now correctly shows the age-signals artifact coord and label instead of leaving the SDK version empty. See `development-plans/plans/2026-04-17-enterprise-quality-bar/06-conventions/06-package-version-schema.md`.
+- `PackageVersionSchemaTest` drift guard.
+
 ## [1.0.4] - 2026-04-17
 
 ### Fixed

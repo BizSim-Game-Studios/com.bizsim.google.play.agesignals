@@ -15,9 +15,14 @@ namespace BizSim.Google.Play.AgeSignals
     internal static class PackageVersion
     {
         /// <summary>Current package version — must match <c>package.json</c>.</summary>
-        public const string Current = "1.0.4";
+        public const string Current = "1.1.0";
 
         /// <summary>Date of the current release (ISO 8601).</summary>
         public const string ReleaseDate = "2026-04-17";
+
+        // === Canonical K8 fields (Plan G — first introduction for this package) ===
+        public const string NativeSdkVersion       = "0.0.3";
+        public const string NativeSdkLabel         = "Play Core (age-signals beta)";
+        public const string NativeSdkArtifactCoord = "com.google.android.play:age-signals:0.0.3";
     }
 }
