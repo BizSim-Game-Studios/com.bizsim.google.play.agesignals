@@ -13,6 +13,17 @@ This document describes the data practices of the **Google Play Age Signals Brid
 | Restriction flags (behavior booleans) | Derived locally | No | Feature gating decisions | `PlayerPrefs`, auto-expires after **24 hours** |
 | API call success/error | Yes (if `BIZSIM_FIREBASE` enabled) | Firebase Analytics | Technical monitoring | Per Firebase Analytics retention policy |
 
+## Log output redaction (v1.0.4+)
+
+Raw age numerics (`age=[lower-upper]`, `AgeLower`, `AgeUpper`) are logged only at the
+`Verbose` level (disabled in release builds). `Info`, `Warning`, and `Error` level outputs
+intentionally omit age values to prevent leakage via Android Logcat or Firebase Crashlytics
+breadcrumb capture. This is enforced by `BizSimLoggerRedactionTest` drift guard — any
+future code emitting age numerics at `Info`+ levels fails CI.
+
+This covers bar item C2.7 in the Enterprise Quality Bar meta-spec
+(`development-plans/plans/2026-04-17-enterprise-quality-bar/01-compliance-bar.md` C2.7).
+
 ## Data NOT Collected
 
 - ❌ No personal information (name, email, phone)

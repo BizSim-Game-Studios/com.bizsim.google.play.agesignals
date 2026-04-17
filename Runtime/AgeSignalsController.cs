@@ -493,8 +493,8 @@ namespace BizSim.Google.Play.AgeSignals
             if (_useFakeForTesting)
             {
                 GetFakeAgeRange(_fakeStatus, _fakeAge, out int fakeLower, out int fakeUpper);
-                BizSimLogger.Info($"Editor test mode — status={_fakeStatus}, " +
-                          $"age=[{fakeLower}-{fakeUpper}]");
+                BizSimLogger.Info($"Editor test mode — status={_fakeStatus}");
+                BizSimLogger.Verbose($"Editor test mode age=[{fakeLower}-{fakeUpper}]  // C2.7 redaction: Verbose-only, release-build-silent");
                 var fakeResult = new AgeSignalsResult
                 {
                     UserStatus = _fakeStatus,
@@ -527,8 +527,8 @@ namespace BizSim.Google.Play.AgeSignals
                 }
 
                 // Build result from mock config (age range computed from status + MockAge)
-                BizSimLogger.Info($"Editor mock — status={_mockConfig.MockStatus}, " +
-                          $"age=[{_mockConfig.AgeLower}-{_mockConfig.AgeUpper}]");
+                BizSimLogger.Info($"Editor mock — status={_mockConfig.MockStatus}");
+                BizSimLogger.Verbose($"Editor mock age=[{_mockConfig.AgeLower}-{_mockConfig.AgeUpper}]  // C2.7 redaction: Verbose-only, release-build-silent");
                 var mockResult = new AgeSignalsResult
                 {
                     UserStatus = _mockConfig.MockStatus,
@@ -581,8 +581,8 @@ namespace BizSim.Google.Play.AgeSignals
                     MostRecentApprovalDateMs = parsed.mostRecentApprovalDate
                 };
 
-                BizSimLogger.Info($"Result: status={result.UserStatus}, " +
-                          $"age=[{result.AgeLower}-{result.AgeUpper}]");
+                BizSimLogger.Info($"Result: status={result.UserStatus}");
+                BizSimLogger.Verbose($"Result age=[{result.AgeLower}-{result.AgeUpper}]  // C2.7 redaction: Verbose-only, release-build-silent");
 
                 ProcessResult(result);
             }
