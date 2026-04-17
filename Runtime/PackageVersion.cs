@@ -15,9 +15,9 @@ namespace BizSim.Google.Play.AgeSignals
     internal static class PackageVersion
     {
         /// <summary>Current package version — must match <c>package.json</c>.</summary>
-        public const string Current = "1.0.3";
+        public const string Current = "1.0.4";
 
         /// <summary>Date of the current release (ISO 8601).</summary>
-        public const string ReleaseDate = "2026-04-16";
+        public const string ReleaseDate = "2026-04-17";
     }
 }

@@ -5,6 +5,11 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [1.0.4] - 2026-04-17
+
+### Fixed
+- **Privacy: redact age numerics from Info+ log levels (C2.7 compliance).** Three `BizSimLogger.Info` calls in `AgeSignalsController.cs` (lines 496, 530, 584) emitted raw age range values like `age=[13-17]` which are captured by Android Logcat and Firebase Crashlytics breadcrumbs even though they never traverse the analytics adapter. Split each call into status-only `Info` + age-numerics `Verbose` (release-build-silent by default). Added `BizSimLoggerRedactionTest` drift guard asserting no `Info`/`Warning`/`Error` call contains age regex patterns. `Documentation~/DATA_SAFETY.md` updated with the redaction policy.
+
 ## [1.0.3] - 2026-04-16
 
 ### Added
