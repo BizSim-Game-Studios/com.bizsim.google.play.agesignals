@@ -5,6 +5,11 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [1.2.0] - 2026-04-17
+
+### Added
+- **C5.2 compliance (Plan E).** `Runtime/Plugins/Android/BizSimAgeSignals.androidlib/AndroidManifest.xml` now explicitly declares `android:enableOnBackInvokedCallback="false"`. This package has no UI — opt-out declared explicitly so consumer apps merging manifests see the intent (they can override at the app level if their UX requires different behavior). MINOR bump because the explicit intent declaration could subtly alter consumer manifest-merge behavior compared to v1.1.0's bare-stub manifest. Added `PredictiveBackManifestTest` drift guard. See `development-plans/plans/2026-04-17-enterprise-quality-bar/06-conventions/05-predictive-back-audit.md`.
+
 ## [1.1.0] - 2026-04-17
 
 ### Added
