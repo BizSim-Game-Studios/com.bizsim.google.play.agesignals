@@ -242,13 +242,55 @@ namespace BizSim.Google.Play.AgeSignals
         }
 
         /// <summary>
-        /// Clears cached restriction flags. Useful for GDPR right-to-erasure compliance
-        /// or when the user logs out.
+        /// Clears cached restriction flags from storage (session-level clear).
+        /// Use for logout flows where the user may return — the per-install
+        /// encryption key identifier is preserved so subsequent saves can
+        /// encrypt with the same key.
         /// </summary>
+        /// <remarks>
+        /// For true GDPR Article 17 right-to-erasure (all package data wiped
+        /// from the device), call <see cref="ForgetAll"/> instead.
+        /// </remarks>
         public void ClearCachedData()
         {
             _cacheProvider?.Clear();
             BizSimLogger.Info("Cached flags cleared");
+        }
+
+        /// <summary>
+        /// GDPR Article 17 right-to-erasure: wipes all age-signals data from
+        /// the device, including the cache payload, the per-install
+        /// encryption key identifier (when using the encrypted provider), and
+        /// the in-memory <see cref="CurrentFlags"/> state. After this call
+        /// the package behaves as if freshly installed.
+        /// </summary>
+        /// <remarks>
+        /// Distinct from <see cref="ClearCachedData"/>, which performs only a
+        /// session-level clear and preserves the encryption key id. Use
+        /// <c>ForgetAll</c> when the user has explicitly invoked their
+        /// right-to-erasure under GDPR Art. 17 or equivalent legislation.
+        /// No age numerics are logged — only a technical "forget_invoked"
+        /// status entry per the package's privacy invariants.
+        /// </remarks>
+        public void ForgetAll()
+        {
+            // Session-level clear first — handles any custom IAgeSignalsCacheProvider
+            // implementation the consumer may have wired up.
+            _cacheProvider?.Clear();
+
+            // For the shipped encrypted provider, also erase the per-install
+            // encryption key identifier. Custom providers that store extra
+            // metadata should be erased by the consumer (we can't reach into
+            // arbitrary implementations).
+            if (_cacheProvider is EncryptedPlayerPrefsCacheProvider epp)
+                epp.EraseAll();
+
+            // In-memory state — the caller expects CurrentFlags to reflect
+            // the post-erasure state (no cached decisions).
+            CurrentFlags = null;
+            _retryCount = 0;
+
+            BizSimLogger.Info("All age signals data erased (forget_invoked)");
         }
 
         /// <summary>

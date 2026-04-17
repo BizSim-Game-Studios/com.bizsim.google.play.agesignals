@@ -5,6 +5,13 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [1.3.0] - 2026-04-17
+
+### Added
+- **GDPR Article 17 Forget API (Wave 2).** New `AgeSignalsController.ForgetAll()` method performs a complete right-to-erasure: clears the encrypted cache payload via the active `IAgeSignalsCacheProvider`, erases the per-install encryption key identifier when the shipped `EncryptedPlayerPrefsCacheProvider` is in use, and nulls the in-memory `CurrentFlags`. After this call, the package behaves as if freshly installed — any subsequent `Save` generates a fresh key id, so data encrypted with the old key becomes permanently unrecoverable. Distinct from the existing `ClearCachedData()` (session-level clear; preserves the key id so future saves encrypt with the same key).
+- **`EncryptedPlayerPrefsCacheProvider.EraseAll()`** public method — the engine behind `ForgetAll`. Deletes both the payload key (`AgeSignals_Cache_Enc`) AND the per-install key id (`AgeSignals_KeyId`) and invalidates the in-memory derived AES key. Consumers may call directly when using a custom invocation path (e.g., a dedicated "Delete my data" button).
+- `ForgetApiTest` drift guard (4 assertions): `EraseAll` deletes both keys, `Clear` preserves the key id, `EraseAll` is idempotent, post-erasure `Save` generates a fresh key id that differs from the erased one (prevents old-key decryption).
+
 ## [1.2.0] - 2026-04-17
 
 ### Added

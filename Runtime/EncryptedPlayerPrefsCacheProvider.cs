@@ -94,6 +94,27 @@ namespace BizSim.Google.Play.AgeSignals
         }
 
         /// <summary>
+        /// Full erasure: clears the encrypted payload AND the per-install key
+        /// identifier (<c>KEY_ID_PREFS_KEY</c>). Invoked by
+        /// <c>AgeSignalsController.ForgetAll()</c> for GDPR Article 17
+        /// (right-to-erasure) compliance.
+        /// </summary>
+        /// <remarks>
+        /// Distinct from <see cref="Clear"/>, which preserves the key identifier
+        /// so subsequent <c>Save</c> calls can encrypt with the same key. Use
+        /// <c>EraseAll</c> only when the consumer has explicitly invoked their
+        /// right-to-erasure — after this call, the next <c>Save</c> will
+        /// generate a fresh per-install GUID (same as a re-install).
+        /// </remarks>
+        public void EraseAll()
+        {
+            PlayerPrefs.DeleteKey(PREFS_KEY);
+            PlayerPrefs.DeleteKey(KEY_ID_PREFS_KEY);
+            _cachedKey = null; // invalidate in-memory derived key
+            PlayerPrefs.Save();
+        }
+
+        /// <summary>
         /// Derives a 256-bit AES key from the per-install GUID using PBKDF2-SHA256.
         /// The result is cached for the lifetime of this provider instance to avoid
         /// redundant KDF work on repeated Load/Save calls within the same session.
