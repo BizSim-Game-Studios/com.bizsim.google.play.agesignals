@@ -5,6 +5,14 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [1.4.0] - 2026-04-18
+
+### Added
+- **EDM4U declared as `package.json` dependency** (`com.google.external-dependency-manager: 1.2.187`) per `unity-package-standards.md` §"EDM4U as a declared `package.json` dependency". Consumers who add the OpenUPM scoped registry to their host project's `Packages/manifest.json` (one-time setup) will have Unity Package Manager auto-install EDM4U transitively. Installation section of README updated with the manifest snippet.
+
+### Fixed
+- Missing `.meta` files for `AgeSignalsEditorInit`, `BizSimLoggerRedactionTest`, `PackageVersionSchemaTest`, and `PredictiveBackManifestTest` added. Prior commits landed source files without their sibling `.meta` companions.
+
 ## [1.3.0] - 2026-04-17
 
 ### Added

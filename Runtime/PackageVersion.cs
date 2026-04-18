@@ -15,10 +15,10 @@ namespace BizSim.Google.Play.AgeSignals
     internal static class PackageVersion
     {
         /// <summary>Current package version — must match <c>package.json</c>.</summary>
-        public const string Current = "1.3.0";
+        public const string Current = "1.4.0";
 
         /// <summary>Date of the current release (ISO 8601).</summary>
-        public const string ReleaseDate = "2026-04-17";
+        public const string ReleaseDate = "2026-04-18";
 
         // === Canonical K8 fields (Plan G — first introduction for this package) ===
         public const string NativeSdkVersion       = "0.0.3";
