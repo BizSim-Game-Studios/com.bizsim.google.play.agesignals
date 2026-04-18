@@ -42,5 +42,7 @@
       "path": "Samples~/MockPresets"
     }
   ],
-  "dependencies": {}
+  "dependencies": {
+    "com.google.external-dependency-manager": "1.2.187"
+  }
 }
