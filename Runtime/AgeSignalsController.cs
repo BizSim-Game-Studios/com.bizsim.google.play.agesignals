@@ -135,7 +135,22 @@ namespace BizSim.Google.Play.AgeSignals
         [SerializeField] private AgeSignalsMockConfig _mockConfig;
 #endif
 
-        // --- Test Mode (debug builds only, Android device) ---
+        // --- Test Mode (debug builds only, Android device + Editor mock path) ---
+        // The Runtime asmdef is includePlatforms: [] (unrestricted) — DELIBERATE, per ADR-014
+        // and the 2026-04-15 asmdef-include-platforms-relaxation plan. Re-tightening it to
+        // ["Android","Editor"] reintroduces a consumer-side CS0246 during Addressables content
+        // builds for asmdef-less consumers (junkyard-tycoon, ~10M installs). Do NOT re-tighten.
+        // Because the asmdef is unrestricted this file compiles on every target, so the
+        // field-level #if below is what eliminates CS0414 by itself: its predicate
+        // (UNITY_ANDROID || UNITY_EDITOR) is exactly the union of the two read sites —
+        //   - `#if UNITY_ANDROID && !UNITY_EDITOR` block (Android player, FakeAgeSignalsManager)
+        //   - `#if UNITY_EDITOR` inner block (editor mock Priority 1, fast-iteration UX)
+        // so the field exists iff a read exists. Microsoft's documented CS0414 remedy
+        // (learn.microsoft.com/dotnet/csharp/misc/cs0414).
+        // Privacy note: these are SYNTHETIC test inputs (not real user age); they never
+        // touch the cache provider, never persist, and the Verbose-only redaction at the
+        // read site (line ~555) preserves Constraint 3 (no age data in analytics).
+#if UNITY_ANDROID || UNITY_EDITOR
         [Header("Test Mode (Debug Builds Only)")]
         [Tooltip("Enable to use Google's FakeAgeSignalsManager on-device. Only works in debug builds.")]
         [SerializeField] private bool _useFakeForTesting = false;
@@ -146,6 +161,7 @@ namespace BizSim.Google.Play.AgeSignals
         [Tooltip("Simulated age for supervised/unknown users (8–99). Ignored for Verified and NotApplicable.")]
         [Range(5, 25)]
         [SerializeField] private int _fakeAge = 14;
+#endif
 
         [Header("Cache")]
         [Tooltip("Use AES-256 encrypted PlayerPrefs cache instead of plain JSON.")]

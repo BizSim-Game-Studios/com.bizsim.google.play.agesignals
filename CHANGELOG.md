@@ -5,6 +5,12 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [1.4.1] - 2026-06-02
+
+### Fixed
+- **`Editor/Dependencies.xml` aligned to `age-signals:0.0.3`** (was `0.0.2`). The EDM4U Maven coordinate had drifted from `.androidlib/build.gradle` and `PackageVersion.NativeSdkArtifactCoord` (both already `0.0.3`); consumers running **Android Resolver → Force Resolve** resolved the stale `0.0.2` AAR. The three-point version sync (`PackageVersion.NativeSdkVersion` ↔ `Editor/Dependencies.xml` ↔ `.androidlib/build.gradle`) is restored. No SDK upgrade — `0.0.3` is the latest published `age-signals` release (verified against Google Maven metadata).
+- **CS0414 "assigned but never used" warning** for the three debug-only test-mode `[SerializeField]`s (`_useFakeForTesting`, `_fakeStatus`, `_fakeAge`) in `AgeSignalsController`. The fields are now wrapped in a `#if UNITY_ANDROID || UNITY_EDITOR` gate whose predicate is exactly the union of their two read-site predicates, so the field exists iff a read exists on every build target. The Runtime asmdef intentionally remains `includePlatforms: []` (ADR-014 — re-tightening to `["Android", "Editor"]` reintroduces a consumer-side `CS0246` during Addressables content builds for asmdef-less consumers); the field-level gate alone is the complete CS0414 fix.
+
 ## [1.4.0] - 2026-04-18
 
 ### Added
