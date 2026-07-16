@@ -48,7 +48,7 @@ namespace BizSim.Google.Play.AgeSignals.Editor
                 const string message =
                     "EDM4U (External Dependency Manager for Unity) is not installed.\n\n" +
                     "This package uses Editor/Dependencies.xml to resolve " +
-                    "'com.google.android.play:age-signals:0.0.2'.\n\n" +
+                    "'com.google.android.play:age-signals:0.0.3'.\n\n" +
                     "Without EDM4U, the native library will be missing and " +
                     "you'll get ClassNotFoundException at runtime.";
 

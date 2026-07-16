@@ -8,7 +8,7 @@ Gradle dependency injection.
 
 ## Google Play Age Signals SDK
 
-- **Library:** `com.google.android.play:age-signals:0.0.2`
+- **Library:** `com.google.android.play:age-signals:0.0.3`
 - **Copyright:** Copyright Google LLC
 - **Status:** Beta
 - **License:** [Play Core Software Development Kit Terms of Service](https://developer.android.com/guide/playcore/license)
