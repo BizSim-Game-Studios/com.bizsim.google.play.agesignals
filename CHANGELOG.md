@@ -5,6 +5,19 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [1.4.3] - 2026-07-16
+
+### Security
+- **Fail-closed on an unrecognized age-verification status.** Previously a status value the beta SDK might add after this release mapped to `NotApplicable` and failed **open** — granting full access and personalized ads to a potentially-underage user. Unrecognized non-empty statuses now map to a new `AgeVerificationStatus.Unrecognized` and are treated fail-**closed** (no access, `NeedsVerification = true`). A genuine `NotApplicable` (outside supported jurisdiction) still correctly grants full access.
+- **A `Declared` status missing its age range now fails closed** instead of granting full access via the `!IsUnder(18)` shortcut.
+
+### Added
+- `AgeVerificationStatus.Unrecognized` plus `AgeSignalsResult.IsUnrecognized` and `AgeSignalsResult.HasAgeRange`.
+- Tests for the fail-closed paths (unrecognized status, declared-without-range) and declared adult/minor handling.
+
+### Changed
+- `AgeSignalsBridge.java` derives the DECLARED status value from the `AgeSignalsVerificationStatus.DECLARED` SDK constant instead of a hardcoded `5`.
+
 ## [1.4.2] - 2026-07-16
 
 ### Fixed
