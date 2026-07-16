@@ -18,7 +18,9 @@ import org.json.JSONObject;
 public class AgeSignalsBridge {
 
     private static final String TAG = "AgeSignalsBridge";
-    private static final int STATUS_DECLARED = 5;
+    // Derived from the SDK constant (0.0.3+) instead of a hardcoded 5, so the value stays
+    // correct-by-construction if the SDK ever renumbers it.
+    private static final int STATUS_DECLARED = AgeSignalsVerificationStatus.DECLARED;
 
     public static void checkAgeSignals(
             final String gameObjectName,

@@ -128,7 +128,15 @@ namespace BizSim.Google.Play.AgeSignals
         Unknown,
 
         /// <summary>User is outside supported jurisdiction (API returned null).</summary>
-        NotApplicable
+        NotApplicable,
+
+        /// <summary>
+        /// The native SDK returned a status value this package version does not recognize
+        /// (e.g., a new value added to the beta Age Signals API after this release).
+        /// Treated fail-closed by <see cref="AgeSignalsDecisionLogic"/>: no access is granted
+        /// and verification is requested, rather than assuming an unrestricted adult.
+        /// </summary>
+        Unrecognized
     }
 
     /// <summary>
@@ -161,6 +169,15 @@ namespace BizSim.Google.Play.AgeSignals
 
         /// <summary>Whether the user's age was declared by the user or parent (Brazil Digital ECA).</summary>
         public bool IsDeclared => UserStatus == AgeVerificationStatus.Declared;
+
+        /// <summary>
+        /// Whether the SDK returned a status this package version does not recognize
+        /// (forward-compatibility guard — see <see cref="AgeVerificationStatus.Unrecognized"/>).
+        /// </summary>
+        public bool IsUnrecognized => UserStatus == AgeVerificationStatus.Unrecognized;
+
+        /// <summary>Whether a concrete age range is present (<see cref="AgeUpper"/> is non-negative).</summary>
+        public bool HasAgeRange => AgeUpper >= 0;
 
         /// <summary>
         /// Whether the user's entire age range falls below the given age.

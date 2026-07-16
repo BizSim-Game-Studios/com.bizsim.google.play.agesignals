@@ -843,7 +843,12 @@ namespace BizSim.Google.Play.AgeSignals
                 "SUPERVISED_APPROVAL_DENIED" => AgeVerificationStatus.SupervisedApprovalDenied,
                 "DECLARED" => AgeVerificationStatus.Declared,
                 "UNKNOWN" => AgeVerificationStatus.Unknown,
-                _ => AgeVerificationStatus.NotApplicable
+                // Fail-closed: an unrecognized non-empty status string (a value the beta SDK
+                // may add after this release) maps to Unrecognized, NOT NotApplicable, so the
+                // decision logic restricts access instead of assuming an unrestricted adult.
+                // null / empty / "null" is still NotApplicable (handled above) — that is a
+                // genuine "no signal applies here", which correctly grants full access.
+                _ => AgeVerificationStatus.Unrecognized
             };
         }
 
@@ -859,6 +864,7 @@ namespace BizSim.Google.Play.AgeSignals
             AgeVerificationStatus.SupervisedApprovalDenied => "SUPERVISED_APPROVAL_DENIED",
             AgeVerificationStatus.Declared => "DECLARED",
             AgeVerificationStatus.Unknown => "UNKNOWN",
+            AgeVerificationStatus.Unrecognized => "UNRECOGNIZED",
             _ => "UNKNOWN"
         };
 

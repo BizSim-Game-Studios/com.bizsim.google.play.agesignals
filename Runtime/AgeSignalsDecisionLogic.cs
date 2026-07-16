@@ -88,6 +88,20 @@ namespace BizSim.Google.Play.AgeSignals
                 return;
             }
 
+            // Fail-closed forward-compatibility guard: an unrecognized status (a value the
+            // native SDK may add to this beta API after this release) — or a Declared status
+            // missing its expected age range — must NOT be treated as an unrestricted adult.
+            // Restrict everything and request verification rather than failing open.
+            if (result.IsUnrecognized || (result.IsDeclared && !result.HasAgeRange))
+            {
+                flags.FullAccessGranted = false;
+                flags.PersonalizedAdsEnabled = false;
+                flags.NeedsVerification = true;
+                foreach (var feature in _features)
+                    flags.SetFeature(feature.key, false);
+                return;
+            }
+
             flags.FullAccessGranted = noData || result.IsAdult
                 || (result.IsDeclared && !result.IsUnder(18));
 

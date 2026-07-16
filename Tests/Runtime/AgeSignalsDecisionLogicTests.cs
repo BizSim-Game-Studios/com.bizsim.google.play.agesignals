@@ -151,6 +151,87 @@ namespace BizSim.Google.Play.AgeSignals.Tests
         }
 
         [Test]
+        public void Unrecognized_FailsClosed_BlocksEverything()
+        {
+            // A status value the beta SDK may add after this release must never fail open.
+            var result = new AgeSignalsResult
+            {
+                UserStatus = AgeVerificationStatus.Unrecognized,
+                AgeLower = -1, AgeUpper = -1
+            };
+            var flags = new AgeRestrictionFlags();
+
+            _logic.ComputeFlags(result, flags);
+
+            Assert.IsFalse(flags.FullAccessGranted);
+            Assert.IsFalse(flags.IsFeatureEnabled(AgeFeatureKeys.Gambling));
+            Assert.IsFalse(flags.IsFeatureEnabled(AgeFeatureKeys.Marketplace));
+            Assert.IsFalse(flags.IsFeatureEnabled(AgeFeatureKeys.Chat));
+            Assert.IsFalse(flags.PersonalizedAdsEnabled);
+            Assert.IsTrue(flags.NeedsVerification);
+        }
+
+        [Test]
+        public void DeclaredWithoutAgeRange_FailsClosed()
+        {
+            // Declared is contractually supposed to carry an age range; if one is missing,
+            // do not grant access — restrict and request verification.
+            var result = new AgeSignalsResult
+            {
+                UserStatus = AgeVerificationStatus.Declared,
+                AgeLower = -1, AgeUpper = -1
+            };
+            var flags = new AgeRestrictionFlags();
+
+            _logic.ComputeFlags(result, flags);
+
+            Assert.IsFalse(flags.FullAccessGranted);
+            Assert.IsFalse(flags.IsFeatureEnabled(AgeFeatureKeys.Marketplace));
+            Assert.IsFalse(flags.IsFeatureEnabled(AgeFeatureKeys.Chat));
+            Assert.IsFalse(flags.PersonalizedAdsEnabled);
+            Assert.IsTrue(flags.NeedsVerification);
+        }
+
+        [Test]
+        public void DeclaredAdult_WithRange_GrantsFullAccessButNotGambling()
+        {
+            // A declared 18+ range grants full access, but gambling still requires a
+            // Verified (not merely Declared) status.
+            var result = new AgeSignalsResult
+            {
+                UserStatus = AgeVerificationStatus.Declared,
+                AgeLower = 18, AgeUpper = 25
+            };
+            var flags = new AgeRestrictionFlags();
+
+            _logic.ComputeFlags(result, flags);
+
+            Assert.IsTrue(flags.FullAccessGranted);
+            Assert.IsFalse(flags.IsFeatureEnabled(AgeFeatureKeys.Gambling));
+            Assert.IsTrue(flags.IsFeatureEnabled(AgeFeatureKeys.Marketplace));
+            Assert.IsTrue(flags.NeedsVerification);
+        }
+
+        [Test]
+        public void DeclaredMinor_WithRange_RestrictsAndNeedsVerification()
+        {
+            var result = new AgeSignalsResult
+            {
+                UserStatus = AgeVerificationStatus.Declared,
+                AgeLower = 10, AgeUpper = 12
+            };
+            var flags = new AgeRestrictionFlags();
+
+            _logic.ComputeFlags(result, flags);
+
+            Assert.IsFalse(flags.FullAccessGranted);
+            Assert.IsFalse(flags.IsFeatureEnabled(AgeFeatureKeys.Gambling));
+            Assert.IsFalse(flags.IsFeatureEnabled(AgeFeatureKeys.Marketplace));
+            Assert.IsFalse(flags.IsFeatureEnabled(AgeFeatureKeys.Chat));
+            Assert.IsTrue(flags.NeedsVerification);
+        }
+
+        [Test]
         public void ComputeConfigHash_DefaultConfig_IsStable()
         {
             string hash1 = _logic.ComputeConfigHash();
