@@ -5,6 +5,35 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [2.0.0] - 2026-07-23
+
+### BREAKING
+- **Upgraded to Google Play Age Signals `0.0.4`** (0.0.3 and below deprecated by Google on 2026-10-31).
+  0.0.4 replaced the single `userStatus` axis with three: access (shared/not-shared/verification-required),
+  age-range source tier (A–D), and guardian approval (approved/pending/declined).
+- **`AgeVerificationStatus` enum removed.** Replaced by `AgeSignalsAccessStatus`, `AgeRangeSourceTier`,
+  and `SignificantChangeStatus`.
+- **`AgeSignalsResult` reshaped.** Removed `UserStatus`, `IsAdult`, `IsSupervised`, `IsDeclared`,
+  `IsAccessDenied`, `MostRecentApprovalDateMs`. Added `AccessStatus`, `AgeRangeSource`,
+  `SignificantChangeStatus`, `SignificantChangeApprovalDateMs`, and derived helpers `IsVerifiedAdult`,
+  `IsDeclaredAdult`, `IsSupervisedMinor`, `IsApprovalDenied`, `IsApprovalPending`, `NeedsVerification`.
+- **Consumer-facing `AgeRestrictionFlags` is UNCHANGED** — consumers that read only the boolean flags
+  (e.g. junkyard-tycoon) need no changes. Consumers that read the raw `AgeSignalsResult` (e.g. Rise of
+  Companies custom decision logic) must adapt to the new fields.
+
+### Added
+- Two-phase flow: `requestAgeSignalsAccess()` (may show the Google-managed sharing prompt in mandatory
+  jurisdictions, e.g. Brazil) → `checkAgeSignals()` when signals are shared.
+- Guardian approval **PENDING** now blocks access until approved (new 0.0.4 behavior).
+
+### Compliance — VERIFY BEFORE SHIPPING
+- The tier→adult mapping (verified adult = TIER_C/TIER_D at 18+; self-declared TIER_A does NOT unlock
+  adult-only features) follows Google's documented pattern but is **not legally reviewed**. Every
+  derived helper defaults **fail-closed**.
+- Out-of-jurisdiction users no longer surface here as "no data = full access"; that case is now the
+  `API_NOT_AVAILABLE` error path. Confirm the error fallback grants full access before release.
+- Device testing of the consent prompt is required. See `DevelopmentPlans/AGE_SIGNALS_0.0.4_MIGRATION.md`.
+
 ## [1.4.3] - 2026-07-16
 
 ### Security

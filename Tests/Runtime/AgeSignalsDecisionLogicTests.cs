@@ -25,11 +25,12 @@ namespace BizSim.Google.Play.AgeSignals.Tests
         }
 
         [Test]
-        public void Verified_GrantsFullAccess()
+        public void VerifiedAdult_GrantsFullAccess()
         {
             var result = new AgeSignalsResult
             {
-                UserStatus = AgeVerificationStatus.Verified,
+                AccessStatus = AgeSignalsAccessStatus.Shared,
+                AgeRangeSource = AgeRangeSourceTier.TierC,
                 AgeLower = 18, AgeUpper = 150
             };
             var flags = new AgeRestrictionFlags();
@@ -45,20 +46,24 @@ namespace BizSim.Google.Play.AgeSignals.Tests
         }
 
         [Test]
-        public void NotApplicable_GrantsFullAccess_NoData()
+        public void NotShared_FailsClosed_NoData()
         {
+            // 0.0.4: an in-jurisdiction user who did not share age signals fails closed.
+            // Out-of-jurisdiction users no longer reach here — they surface as an API error.
             var result = new AgeSignalsResult
             {
-                UserStatus = AgeVerificationStatus.NotApplicable,
+                AccessStatus = AgeSignalsAccessStatus.NotShared,
+                AgeRangeSource = AgeRangeSourceTier.None,
                 AgeLower = -1, AgeUpper = -1
             };
             var flags = new AgeRestrictionFlags();
 
             _logic.ComputeFlags(result, flags);
 
-            Assert.IsTrue(flags.FullAccessGranted);
-            Assert.IsTrue(flags.IsFeatureEnabled(AgeFeatureKeys.Gambling));
-            Assert.IsTrue(flags.PersonalizedAdsEnabled);
+            Assert.IsFalse(flags.FullAccessGranted);
+            Assert.IsFalse(flags.IsFeatureEnabled(AgeFeatureKeys.Gambling));
+            Assert.IsFalse(flags.PersonalizedAdsEnabled);
+            Assert.IsTrue(flags.NeedsVerification);
         }
 
         [Test]
@@ -66,7 +71,9 @@ namespace BizSim.Google.Play.AgeSignals.Tests
         {
             var result = new AgeSignalsResult
             {
-                UserStatus = AgeVerificationStatus.Supervised,
+                AccessStatus = AgeSignalsAccessStatus.Shared,
+                AgeRangeSource = AgeRangeSourceTier.TierB,
+                SignificantChangeStatus = SignificantChangeStatus.Approved,
                 AgeLower = 8, AgeUpper = 10
             };
             var flags = new AgeRestrictionFlags();
@@ -85,7 +92,9 @@ namespace BizSim.Google.Play.AgeSignals.Tests
         {
             var result = new AgeSignalsResult
             {
-                UserStatus = AgeVerificationStatus.Supervised,
+                AccessStatus = AgeSignalsAccessStatus.Shared,
+                AgeRangeSource = AgeRangeSourceTier.TierB,
+                SignificantChangeStatus = SignificantChangeStatus.Approved,
                 AgeLower = 12, AgeUpper = 14
             };
             var flags = new AgeRestrictionFlags();
@@ -103,7 +112,9 @@ namespace BizSim.Google.Play.AgeSignals.Tests
         {
             var result = new AgeSignalsResult
             {
-                UserStatus = AgeVerificationStatus.Supervised,
+                AccessStatus = AgeSignalsAccessStatus.Shared,
+                AgeRangeSource = AgeRangeSourceTier.TierB,
+                SignificantChangeStatus = SignificantChangeStatus.Approved,
                 AgeLower = 15, AgeUpper = 17
             };
             var flags = new AgeRestrictionFlags();
@@ -120,7 +131,9 @@ namespace BizSim.Google.Play.AgeSignals.Tests
         {
             var result = new AgeSignalsResult
             {
-                UserStatus = AgeVerificationStatus.SupervisedApprovalDenied,
+                AccessStatus = AgeSignalsAccessStatus.Shared,
+                AgeRangeSource = AgeRangeSourceTier.TierB,
+                SignificantChangeStatus = SignificantChangeStatus.Declined,
                 AgeLower = 8, AgeUpper = 10
             };
             var flags = new AgeRestrictionFlags();
@@ -136,11 +149,12 @@ namespace BizSim.Google.Play.AgeSignals.Tests
         }
 
         [Test]
-        public void Unknown_SetsNeedsVerification()
+        public void VerificationRequired_SetsNeedsVerification()
         {
             var result = new AgeSignalsResult
             {
-                UserStatus = AgeVerificationStatus.Unknown,
+                AccessStatus = AgeSignalsAccessStatus.VerificationRequired,
+                AgeRangeSource = AgeRangeSourceTier.None,
                 AgeLower = -1, AgeUpper = -1
             };
             var flags = new AgeRestrictionFlags();
@@ -153,10 +167,11 @@ namespace BizSim.Google.Play.AgeSignals.Tests
         [Test]
         public void Unrecognized_FailsClosed_BlocksEverything()
         {
-            // A status value the beta SDK may add after this release must never fail open.
+            // An access value the beta SDK may add after this release must never fail open.
             var result = new AgeSignalsResult
             {
-                UserStatus = AgeVerificationStatus.Unrecognized,
+                AccessStatus = AgeSignalsAccessStatus.Unrecognized,
+                AgeRangeSource = AgeRangeSourceTier.Unrecognized,
                 AgeLower = -1, AgeUpper = -1
             };
             var flags = new AgeRestrictionFlags();
@@ -172,13 +187,14 @@ namespace BizSim.Google.Play.AgeSignals.Tests
         }
 
         [Test]
-        public void DeclaredWithoutAgeRange_FailsClosed()
+        public void SharedWithoutSourceTier_FailsClosed()
         {
-            // Declared is contractually supposed to carry an age range; if one is missing,
+            // Signals reported as shared but with no usable source tier carry no age data;
             // do not grant access — restrict and request verification.
             var result = new AgeSignalsResult
             {
-                UserStatus = AgeVerificationStatus.Declared,
+                AccessStatus = AgeSignalsAccessStatus.Shared,
+                AgeRangeSource = AgeRangeSourceTier.Unspecified,
                 AgeLower = -1, AgeUpper = -1
             };
             var flags = new AgeRestrictionFlags();
@@ -193,31 +209,36 @@ namespace BizSim.Google.Play.AgeSignals.Tests
         }
 
         [Test]
-        public void DeclaredAdult_WithRange_GrantsFullAccessButNotGambling()
+        public void DeclaredAdult_WithRange_UnlocksNonAdultFeaturesNotGambling()
         {
-            // A declared 18+ range grants full access, but gambling still requires a
-            // Verified (not merely Declared) status.
+            // A self-declared (TierA) 18+ range unlocks non-adult features but is NOT
+            // full access — gambling and full access still require a verified (TierC/D) tier,
+            // and the declared adult keeps a verification nudge.
             var result = new AgeSignalsResult
             {
-                UserStatus = AgeVerificationStatus.Declared,
+                AccessStatus = AgeSignalsAccessStatus.Shared,
+                AgeRangeSource = AgeRangeSourceTier.TierA,
                 AgeLower = 18, AgeUpper = 25
             };
             var flags = new AgeRestrictionFlags();
 
             _logic.ComputeFlags(result, flags);
 
-            Assert.IsTrue(flags.FullAccessGranted);
+            Assert.IsFalse(flags.FullAccessGranted);
             Assert.IsFalse(flags.IsFeatureEnabled(AgeFeatureKeys.Gambling));
             Assert.IsTrue(flags.IsFeatureEnabled(AgeFeatureKeys.Marketplace));
             Assert.IsTrue(flags.NeedsVerification);
         }
 
         [Test]
-        public void DeclaredMinor_WithRange_RestrictsAndNeedsVerification()
+        public void DeclaredMinor_WithRange_RestrictsAgeGatedFeatures()
         {
+            // A self-declared (TierA) minor with a known range is restricted by age, but its
+            // age is already known so it is NOT flagged for verification (unlike a declared adult).
             var result = new AgeSignalsResult
             {
-                UserStatus = AgeVerificationStatus.Declared,
+                AccessStatus = AgeSignalsAccessStatus.Shared,
+                AgeRangeSource = AgeRangeSourceTier.TierA,
                 AgeLower = 10, AgeUpper = 12
             };
             var flags = new AgeRestrictionFlags();
@@ -228,7 +249,7 @@ namespace BizSim.Google.Play.AgeSignals.Tests
             Assert.IsFalse(flags.IsFeatureEnabled(AgeFeatureKeys.Gambling));
             Assert.IsFalse(flags.IsFeatureEnabled(AgeFeatureKeys.Marketplace));
             Assert.IsFalse(flags.IsFeatureEnabled(AgeFeatureKeys.Chat));
-            Assert.IsTrue(flags.NeedsVerification);
+            Assert.IsFalse(flags.NeedsVerification);
         }
 
         [Test]

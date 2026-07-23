@@ -3,9 +3,11 @@
     xmlns:tools="http://schemas.android.com/tools">
 
     <!-- C5.2 predictive back gesture (Android 14+ / API 34+).
-         AgeSignals has NO UI surface — it's a pure API call that returns
-         derived restriction flags. Opt-out explicitly declared so consumer
-         apps merging manifests see the intent. Per
+         AgeSignals 0.0.4 CAN surface UI: requestAgeSignalsAccess() may show the
+         Google-managed sharing prompt (AgeSharingConsentWrapperActivity, bundled
+         by the SDK) for unsupervised users in mandatory jurisdictions (e.g. Brazil).
+         This package's own bridge has no UI; the opt-out below is package-level
+         intent for the manifest merger and the consumer app-level value wins. Per
          2026-04-17-enterprise-quality-bar 06-conventions/05-predictive-back-audit.md.
          Consumer app-level android:enableOnBackInvokedCallback wins on
          manifest-merger conflict — this is package-level intent. -->

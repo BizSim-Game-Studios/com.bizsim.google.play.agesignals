@@ -72,27 +72,46 @@ namespace BizSim.Google.Play.AgeSignals
         /// </summary>
         public virtual void ComputeFlags(AgeSignalsResult result, AgeRestrictionFlags flags)
         {
-            bool noData = !result.HasAgeData;
+            // ================================================================================
+            // COMPLIANCE — VERIFY BEFORE SHIPPING (Age Signals 0.0.4)
+            // The 0.0.4 model splits the old single userStatus into three axes: access
+            // (shared/not-shared/verification-required), source tier (A/B/C/D), and guardian
+            // approval (approved/pending/declined). The tier→adult mapping below follows
+            // Google's documented pattern (verified adult = TIER_C/D + 18+) but was NOT confirmed
+            // from verbatim primary source and is NOT legally reviewed. It defaults FAIL-CLOSED.
+            //
+            // OPEN COMPLIANCE QUESTION (do NOT ship without resolving): out-of-jurisdiction users
+            // (most of the world) no longer reach here as "no data = full access". In 0.0.4 they
+            // surface as the API_NOT_AVAILABLE error, handled by the controller's error path — NOT
+            // this method. Here, any in-jurisdiction no-data state (NOT_SHARED / VERIFICATION_REQUIRED
+            // / UNSPECIFIED) FAILS CLOSED. Confirm the controller's error fallback grants full access
+            // for genuine out-of-jurisdiction before release, or non-jurisdiction users get restricted.
+            // ================================================================================
 
-            flags.AccessDenied = result.IsAccessDenied;
-
-            // Access denied → block everything
-            if (flags.AccessDenied)
+            // Guardian approval denied → block everything (highest priority).
+            if (result.IsApprovalDenied)
             {
+                flags.AccessDenied = true;
                 flags.FullAccessGranted = false;
                 flags.PersonalizedAdsEnabled = false;
                 flags.NeedsVerification = false;
-                // Block all dynamic features
                 foreach (var feature in _features)
                     flags.SetFeature(feature.key, false);
                 return;
             }
 
-            // Fail-closed forward-compatibility guard: an unrecognized status (a value the
-            // native SDK may add to this beta API after this release) — or a Declared status
-            // missing its expected age range — must NOT be treated as an unrestricted adult.
-            // Restrict everything and request verification rather than failing open.
-            if (result.IsUnrecognized || (result.IsDeclared && !result.HasAgeRange))
+            flags.AccessDenied = false;
+
+            // Fail-closed guards: unrecognized SDK values, guardian approval PENDING (new 0.0.4
+            // "block until approved" behavior), mandatory-jurisdiction verification required, or any
+            // in-jurisdiction state where age was not actually shared. Restrict + request verification.
+            bool failClosed =
+                result.IsUnrecognized
+                || result.IsApprovalPending
+                || result.NeedsVerification
+                || !result.HasAgeData;
+
+            if (failClosed)
             {
                 flags.FullAccessGranted = false;
                 flags.PersonalizedAdsEnabled = false;
@@ -102,24 +121,27 @@ namespace BizSim.Google.Play.AgeSignals
                 return;
             }
 
-            flags.FullAccessGranted = noData || result.IsAdult
-                || (result.IsDeclared && !result.IsUnder(18));
+            // From here: age signals WERE shared with a concrete tier. Decide from age + tier.
+            // VERIFY: "verified adult" = assessed/verified tiers (C/D) at 18+. Self-declared adult
+            // (TIER_A) is intentionally NOT full access — it does not unlock adult-only features.
+            bool verifiedAdult = result.IsVerifiedAdult;
 
-            // Dynamic feature evaluation
+            flags.FullAccessGranted = verifiedAdult;
+
             foreach (var feature in _features)
             {
                 bool enabled;
                 if (feature.requiresAdult)
-                    enabled = noData || result.IsAdult;
+                    enabled = verifiedAdult;                       // e.g. gambling: TIER_C/D + 18+ only
                 else
-                    enabled = noData || result.IsAdult || !result.IsUnder(feature.minAge);
+                    enabled = verifiedAdult || !result.IsUnder(feature.minAge);
 
                 flags.SetFeature(feature.key, enabled);
             }
 
-            flags.PersonalizedAdsEnabled = noData || !result.IsUnder(_personalizedAdsMinAge);
-            flags.NeedsVerification = result.UserStatus == AgeVerificationStatus.Unknown
-                || result.UserStatus == AgeVerificationStatus.Declared;
+            flags.PersonalizedAdsEnabled = !result.IsUnder(_personalizedAdsMinAge);
+            // Self-declared adults still get a verification nudge (not verified for adult features).
+            flags.NeedsVerification = result.IsDeclaredAdult;
         }
 
         /// <summary>

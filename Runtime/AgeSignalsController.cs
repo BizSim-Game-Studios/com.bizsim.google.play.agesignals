@@ -155,10 +155,13 @@ namespace BizSim.Google.Play.AgeSignals
         [Tooltip("Enable to use Google's FakeAgeSignalsManager on-device. Only works in debug builds.")]
         [SerializeField] private bool _useFakeForTesting = false;
 
-        [Tooltip("Verification status to simulate on-device with FakeAgeSignalsManager.")]
-        [SerializeField] private AgeVerificationStatus _fakeStatus = AgeVerificationStatus.Supervised;
+        [Tooltip("Age range source tier to simulate on-device (0.0.4). TierB = supervised minor.")]
+        [SerializeField] private AgeRangeSourceTier _fakeSource = AgeRangeSourceTier.TierB;
 
-        [Tooltip("Simulated age for supervised/unknown users (8–99). Ignored for Verified and NotApplicable.")]
+        [Tooltip("Guardian approval status to simulate (only meaningful for TierB supervised minors).")]
+        [SerializeField] private SignificantChangeStatus _fakeChangeStatus = SignificantChangeStatus.Approved;
+
+        [Tooltip("Simulated age for the fake result (5–25). Ignored for verified adult tiers.")]
         [Range(5, 25)]
         [SerializeField] private int _fakeAge = 14;
 #endif
@@ -502,13 +505,14 @@ namespace BizSim.Google.Play.AgeSignals
 
                 if (useFake)
                 {
-                    GetFakeAgeRange(_fakeStatus, _fakeAge, out int fakeLower, out int fakeUpper);
+                    GetFakeAgeRange(_fakeSource, _fakeAge, out int fakeLower, out int fakeUpper);
                     _bridgeClass.CallStatic("checkAgeSignalsWithFake",
                         gameObject.name,
                         nameof(OnAgeSignalsResult),
                         nameof(OnAgeSignalsError),
                         true,
-                        StatusToJavaString(_fakeStatus),
+                        SourceToJavaString(_fakeSource),
+                        ChangeToJavaString(_fakeChangeStatus),
                         fakeLower,
                         fakeUpper);
                 }
@@ -547,19 +551,21 @@ namespace BizSim.Google.Play.AgeSignals
         private void BuildEditorMockResult()
         {
 #if UNITY_EDITOR
-            // Priority 1: Test Mode fields (fake status/age from Inspector)
+            // Priority 1: Test Mode fields (fake source/change/age from Inspector)
             if (_useFakeForTesting)
             {
-                GetFakeAgeRange(_fakeStatus, _fakeAge, out int fakeLower, out int fakeUpper);
-                BizSimLogger.Info($"Editor test mode — status={_fakeStatus}");
+                GetFakeAgeRange(_fakeSource, _fakeAge, out int fakeLower, out int fakeUpper);
+                BizSimLogger.Info($"Editor test mode — source={_fakeSource} change={_fakeChangeStatus}");
                 BizSimLogger.Verbose($"Editor test mode age=[{fakeLower}-{fakeUpper}]  // C2.7 redaction: Verbose-only, release-build-silent");
                 var fakeResult = new AgeSignalsResult
                 {
-                    UserStatus = _fakeStatus,
+                    AccessStatus = AgeSignalsAccessStatus.Shared,
+                    AgeRangeSource = _fakeSource,
+                    SignificantChangeStatus = _fakeChangeStatus,
                     AgeLower = fakeLower,
                     AgeUpper = fakeUpper,
                     InstallId = null,
-                    MostRecentApprovalDateMs = 0
+                    SignificantChangeApprovalDateMs = 0
                 };
                 ProcessResult(fakeResult);
                 return;
@@ -584,30 +590,34 @@ namespace BizSim.Google.Play.AgeSignals
                     return;
                 }
 
-                // Build result from mock config (age range computed from status + MockAge)
-                BizSimLogger.Info($"Editor mock — status={_mockConfig.MockStatus}");
+                // Build result from mock config (age range computed from source + MockAge)
+                BizSimLogger.Info($"Editor mock — source={_mockConfig.MockSource} change={_mockConfig.MockChangeStatus}");
                 BizSimLogger.Verbose($"Editor mock age=[{_mockConfig.AgeLower}-{_mockConfig.AgeUpper}]  // C2.7 redaction: Verbose-only, release-build-silent");
                 var mockResult = new AgeSignalsResult
                 {
-                    UserStatus = _mockConfig.MockStatus,
+                    AccessStatus = _mockConfig.MockAccessStatus,
+                    AgeRangeSource = _mockConfig.MockSource,
+                    SignificantChangeStatus = _mockConfig.MockChangeStatus,
                     AgeLower = _mockConfig.AgeLower,
                     AgeUpper = _mockConfig.AgeUpper,
                     InstallId = null,
-                    MostRecentApprovalDateMs = 0
+                    SignificantChangeApprovalDateMs = 0
                 };
                 ProcessResult(mockResult);
                 return;
             }
 #endif
-            // Default fallback: simulate a user outside supported jurisdiction
-            BizSimLogger.Info("Editor mode — no mock config assigned, returning NotApplicable");
+            // Default fallback: simulate a user outside supported jurisdiction (no signals shared).
+            BizSimLogger.Info("Editor mode — no mock config assigned, returning Unspecified (no data)");
             var defaultResult = new AgeSignalsResult
             {
-                UserStatus = AgeVerificationStatus.NotApplicable,
+                AccessStatus = AgeSignalsAccessStatus.Unspecified,
+                AgeRangeSource = AgeRangeSourceTier.None,
+                SignificantChangeStatus = SignificantChangeStatus.None,
                 AgeLower = -1,
                 AgeUpper = -1,
                 InstallId = null,
-                MostRecentApprovalDateMs = 0
+                SignificantChangeApprovalDateMs = 0
             };
             ProcessResult(defaultResult);
         }
@@ -632,14 +642,16 @@ namespace BizSim.Google.Play.AgeSignals
                 var parsed = JsonUtility.FromJson<AgeSignalsJsonResult>(json);
                 var result = new AgeSignalsResult
                 {
-                    UserStatus = ParseStatus(parsed.userStatus),
+                    AccessStatus = ParseAccessStatus(parsed.accessStatus),
+                    AgeRangeSource = ParseAgeRangeSource(parsed.ageRangeSource),
+                    SignificantChangeStatus = ParseChangeStatus(parsed.significantChangeStatus),
                     AgeLower = parsed.ageLower,
                     AgeUpper = parsed.ageUpper,
                     InstallId = parsed.installId,
-                    MostRecentApprovalDateMs = parsed.mostRecentApprovalDate
+                    SignificantChangeApprovalDateMs = parsed.significantChangeApprovalDate
                 };
 
-                BizSimLogger.Info($"Result: status={result.UserStatus}");
+                BizSimLogger.Info($"Result: access={result.AccessStatus} source={result.AgeRangeSource} change={result.SignificantChangeStatus}");
                 BizSimLogger.Verbose($"Result age=[{result.AgeLower}-{result.AgeUpper}]  // C2.7 redaction: Verbose-only, release-build-silent");
 
                 ProcessResult(result);
@@ -826,82 +838,102 @@ namespace BizSim.Google.Play.AgeSignals
         // JSON Parsing Helpers
         // =================================================================
 
-        /// <summary>
-        /// Converts a status string from the Java bridge to the corresponding enum value.
-        /// Returns <see cref="AgeVerificationStatus.NotApplicable"/> for null or unrecognized values.
-        /// </summary>
-        private static AgeVerificationStatus ParseStatus(string status)
+        /// <summary>Parses the access-status string from the bridge. Unrecognized non-empty → Unrecognized (fail-closed).</summary>
+        private static AgeSignalsAccessStatus ParseAccessStatus(string status)
         {
             if (string.IsNullOrEmpty(status) || status == "null")
-                return AgeVerificationStatus.NotApplicable;
+                return AgeSignalsAccessStatus.Unspecified;
 
             return status switch
             {
-                "VERIFIED" => AgeVerificationStatus.Verified,
-                "SUPERVISED" => AgeVerificationStatus.Supervised,
-                "SUPERVISED_APPROVAL_PENDING" => AgeVerificationStatus.SupervisedApprovalPending,
-                "SUPERVISED_APPROVAL_DENIED" => AgeVerificationStatus.SupervisedApprovalDenied,
-                "DECLARED" => AgeVerificationStatus.Declared,
-                "UNKNOWN" => AgeVerificationStatus.Unknown,
-                // Fail-closed: an unrecognized non-empty status string (a value the beta SDK
-                // may add after this release) maps to Unrecognized, NOT NotApplicable, so the
-                // decision logic restricts access instead of assuming an unrestricted adult.
-                // null / empty / "null" is still NotApplicable (handled above) — that is a
-                // genuine "no signal applies here", which correctly grants full access.
-                _ => AgeVerificationStatus.Unrecognized
+                "SHARED" => AgeSignalsAccessStatus.Shared,
+                "NOT_SHARED" => AgeSignalsAccessStatus.NotShared,
+                "VERIFICATION_REQUIRED" => AgeSignalsAccessStatus.VerificationRequired,
+                "UNSPECIFIED" => AgeSignalsAccessStatus.Unspecified,
+                _ => AgeSignalsAccessStatus.Unrecognized
             };
         }
 
-        /// <summary>
-        /// Converts an <see cref="AgeVerificationStatus"/> enum to the uppercase string
-        /// expected by the Java bridge's FakeAgeSignalsManager.
-        /// </summary>
-        private static string StatusToJavaString(AgeVerificationStatus status) => status switch
+        /// <summary>Parses the age-range-source string. null → None; unrecognized non-empty → Unrecognized (fail-closed).</summary>
+        private static AgeRangeSourceTier ParseAgeRangeSource(string source)
         {
-            AgeVerificationStatus.Verified => "VERIFIED",
-            AgeVerificationStatus.Supervised => "SUPERVISED",
-            AgeVerificationStatus.SupervisedApprovalPending => "SUPERVISED_APPROVAL_PENDING",
-            AgeVerificationStatus.SupervisedApprovalDenied => "SUPERVISED_APPROVAL_DENIED",
-            AgeVerificationStatus.Declared => "DECLARED",
-            AgeVerificationStatus.Unknown => "UNKNOWN",
-            AgeVerificationStatus.Unrecognized => "UNRECOGNIZED",
-            _ => "UNKNOWN"
+            if (string.IsNullOrEmpty(source) || source == "null")
+                return AgeRangeSourceTier.None;
+
+            return source switch
+            {
+                "TIER_A" => AgeRangeSourceTier.TierA,
+                "TIER_B" => AgeRangeSourceTier.TierB,
+                "TIER_C" => AgeRangeSourceTier.TierC,
+                "TIER_D" => AgeRangeSourceTier.TierD,
+                "UNSPECIFIED" => AgeRangeSourceTier.Unspecified,
+                _ => AgeRangeSourceTier.Unrecognized
+            };
+        }
+
+        /// <summary>Parses the significant-change-status string. null → None; unrecognized non-empty → Unrecognized (fail-closed).</summary>
+        private static SignificantChangeStatus ParseChangeStatus(string change)
+        {
+            if (string.IsNullOrEmpty(change) || change == "null")
+                return SignificantChangeStatus.None;
+
+            return change switch
+            {
+                "APPROVED" => SignificantChangeStatus.Approved,
+                "PENDING" => SignificantChangeStatus.Pending,
+                "DECLINED" => SignificantChangeStatus.Declined,
+                "UNSPECIFIED" => SignificantChangeStatus.Unspecified,
+                _ => SignificantChangeStatus.Unrecognized
+            };
+        }
+
+        /// <summary>Converts an <see cref="AgeRangeSourceTier"/> to the string expected by the fake manager.</summary>
+        private static string SourceToJavaString(AgeRangeSourceTier source) => source switch
+        {
+            AgeRangeSourceTier.TierA => "TIER_A",
+            AgeRangeSourceTier.TierB => "TIER_B",
+            AgeRangeSourceTier.TierC => "TIER_C",
+            AgeRangeSourceTier.TierD => "TIER_D",
+            _ => "UNSPECIFIED"
+        };
+
+        /// <summary>Converts a <see cref="SignificantChangeStatus"/> to the string expected by the fake manager.</summary>
+        private static string ChangeToJavaString(SignificantChangeStatus change) => change switch
+        {
+            SignificantChangeStatus.Approved => "APPROVED",
+            SignificantChangeStatus.Pending => "PENDING",
+            SignificantChangeStatus.Declined => "DECLINED",
+            _ => "UNSPECIFIED"
         };
 
         /// <summary>
-        /// Computes realistic age range bounds from a status and single age value.
-        /// Follows Google Play Age Signals API conventions:
-        /// <list type="bullet">
-        /// <item><b>Verified</b> — adult, age range 18–150 (API guarantees 18+).</item>
-        /// <item><b>Supervised*</b> — child/teen, ±2 year bucket around the given age.</item>
-        /// <item><b>Unknown / NotApplicable</b> — no age data (-1, -1).</item>
-        /// </list>
+        /// Computes realistic age range bounds from a source tier and single age value for fakes.
+        /// TIER_C/TIER_D (verified/assessed) → adult 18–150; TIER_B (supervised) → ±2 bucket;
+        /// TIER_A (declared) → banded; None/Unspecified → no data.
         /// </summary>
-        private static void GetFakeAgeRange(AgeVerificationStatus status, int age, out int lower, out int upper)
+        private static void GetFakeAgeRange(AgeRangeSourceTier source, int age, out int lower, out int upper)
         {
-            switch (status)
+            switch (source)
             {
-                case AgeVerificationStatus.Verified:
-                    // API only returns Verified for confirmed 18+ users
-                    lower = 18;
-                    upper = 150;
+                case AgeRangeSourceTier.TierC:
+                case AgeRangeSourceTier.TierD:
+                    lower = age >= 18 ? 18 : age;
+                    upper = age >= 18 ? 150 : age;
                     break;
 
-                case AgeVerificationStatus.Supervised:
-                case AgeVerificationStatus.SupervisedApprovalPending:
-                case AgeVerificationStatus.SupervisedApprovalDenied:
+                case AgeRangeSourceTier.TierB:
                     lower = Mathf.Max(0, age - 2);
                     upper = age + 2;
                     break;
 
-                case AgeVerificationStatus.Declared:
+                case AgeRangeSourceTier.TierA:
                     if (age < 13) { lower = 0; upper = 12; }
                     else if (age < 16) { lower = 13; upper = 15; }
                     else if (age < 18) { lower = 16; upper = 17; }
                     else { lower = 18; upper = 150; }
                     break;
 
-                default: // Unknown, NotApplicable
+                default: // None, Unspecified, Unrecognized
                     lower = -1;
                     upper = -1;
                     break;
@@ -915,11 +947,13 @@ namespace BizSim.Google.Play.AgeSignals
         [Serializable]
         private class AgeSignalsJsonResult
         {
-            public string userStatus;
+            public string accessStatus;
+            public string ageRangeSource;
+            public string significantChangeStatus;
             public int ageLower = -1;
             public int ageUpper = -1;
             public string installId;
-            public long mostRecentApprovalDate;
+            public long significantChangeApprovalDate;
         }
     }
 }
