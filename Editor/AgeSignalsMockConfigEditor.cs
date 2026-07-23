@@ -30,14 +30,18 @@ namespace BizSim.Google.Play.AgeSignals.Editor
         private static readonly Color SepColor = new(1f, 1f, 1f, 0.06f);
 
         // ── Serialized Properties ──
-        private SerializedProperty _mockStatus;
+        private SerializedProperty _mockAccessStatus;
+        private SerializedProperty _mockSource;
+        private SerializedProperty _mockChangeStatus;
         private SerializedProperty _mockAge;
         private SerializedProperty _simulateError;
         private SerializedProperty _simulatedErrorCode;
 
         private void OnEnable()
         {
-            _mockStatus = serializedObject.FindProperty("MockStatus");
+            _mockAccessStatus = serializedObject.FindProperty("MockAccessStatus");
+            _mockSource = serializedObject.FindProperty("MockSource");
+            _mockChangeStatus = serializedObject.FindProperty("MockChangeStatus");
             _mockAge = serializedObject.FindProperty("MockAge");
             _simulateError = serializedObject.FindProperty("SimulateError");
             _simulatedErrorCode = serializedObject.FindProperty("SimulatedErrorCode");
@@ -92,46 +96,53 @@ namespace BizSim.Google.Play.AgeSignals.Editor
             EditorGUILayout.LabelField("Mock API Response", EditorStyles.boldLabel);
             GUILayout.Space(4);
 
-            EditorGUILayout.PropertyField(_mockStatus, new GUIContent("Status", "Verification status the API would return."));
+            EditorGUILayout.PropertyField(_mockAccessStatus,
+                new GUIContent("Access Status", "Whether the API reports the age signal as shared."));
+            EditorGUILayout.PropertyField(_mockSource,
+                new GUIContent("Source Tier", "Age range source tier. TierB = supervised minor; TierC/D = verified adult; TierA = self-declared."));
 
-            var status = (AgeVerificationStatus)_mockStatus.enumValueIndex;
-            bool isSupervised = status == AgeVerificationStatus.Supervised ||
-                                status == AgeVerificationStatus.SupervisedApprovalPending ||
-                                status == AgeVerificationStatus.SupervisedApprovalDenied;
+            var source = (AgeRangeSourceTier)_mockSource.enumValueIndex;
+            bool isSupervised = source == AgeRangeSourceTier.TierB;
 
-            // Age slider — only relevant for supervised statuses
+            // Guardian approval — only meaningful for supervised (TierB) minors
             using (new EditorGUI.DisabledGroupScope(!isSupervised))
             {
-                EditorGUILayout.IntSlider(_mockAge, 5, 25,
-                    new GUIContent("Age", "Simulated age. Only used for supervised statuses."));
+                EditorGUILayout.PropertyField(_mockChangeStatus,
+                    new GUIContent("Approval", "Guardian approval status. Only meaningful for TierB supervised minors."));
             }
 
-            // Computed age range preview
+            bool hasAge = source == AgeRangeSourceTier.TierA ||
+                          source == AgeRangeSourceTier.TierB ||
+                          source == AgeRangeSourceTier.TierC ||
+                          source == AgeRangeSourceTier.TierD;
+
+            // Age slider — drives the reported range for concrete tiers
+            using (new EditorGUI.DisabledGroupScope(!hasAge))
+            {
+                EditorGUILayout.IntSlider(_mockAge, 5, 25,
+                    new GUIContent("Age", "Simulated age. Drives the reported range for supervised and declared tiers."));
+            }
+
+            // Computed age range preview (from the pending tier + age)
             GUILayout.Space(4);
+            GetFakeRange(source, _mockAge.intValue, out int lo, out int hi);
             string rangeText;
             Color rangeColor;
-            if (status == AgeVerificationStatus.Verified)
+            if (lo < 0)
             {
-                rangeText = "Age range: 18 – 150  (confirmed adult)";
-                rangeColor = Green;
+                rangeText = "Age range: N/A  (no usable age data)";
+                rangeColor = Muted;
             }
-            else if (isSupervised)
+            else if (source == AgeRangeSourceTier.TierC || source == AgeRangeSourceTier.TierD)
             {
-                int age = _mockAge.intValue;
-                int lo = Mathf.Max(0, age - 2);
-                int hi = age + 2;
-                rangeText = $"Age range: {lo} – {hi}  (±2 year bucket)";
-                rangeColor = age < 13 ? Red : age < 18 ? Warn : Green;
-            }
-            else if (status == AgeVerificationStatus.Unknown)
-            {
-                rangeText = "Age range: unknown  (no age data, needs verification)";
-                rangeColor = Warn;
+                rangeText = $"Age range: {lo} – {hi}  (verified tier)";
+                rangeColor = lo >= 18 ? Green : Warn;
             }
             else
             {
-                rangeText = "Age range: N/A  (outside supported jurisdiction)";
-                rangeColor = Muted;
+                string band = source == AgeRangeSourceTier.TierB ? "±2 year bucket" : "declared band";
+                rangeText = $"Age range: {lo} – {hi}  ({band})";
+                rangeColor = hi < 13 ? Red : hi < 18 ? Warn : Green;
             }
 
             var rangeRect = EditorGUILayout.GetControlRect(false, 20);
@@ -144,8 +155,9 @@ namespace BizSim.Google.Play.AgeSignals.Editor
                     normal = { textColor = rangeColor }
                 });
 
-            // Access denied warning
-            if (status == AgeVerificationStatus.SupervisedApprovalDenied)
+            // Access denied warning — supervised minor whose guardian approval was declined
+            var change = (SignificantChangeStatus)_mockChangeStatus.enumValueIndex;
+            if (isSupervised && change == SignificantChangeStatus.Declined)
             {
                 GUILayout.Space(4);
                 var warnRect = EditorGUILayout.GetControlRect(false, 20);
@@ -267,25 +279,44 @@ namespace BizSim.Google.Play.AgeSignals.Editor
             }
             else
             {
-                var status = config.MockStatus;
-                string statusStr = status switch
+                string accessStr = config.MockAccessStatus switch
                 {
-                    AgeVerificationStatus.Verified => "VERIFIED",
-                    AgeVerificationStatus.Supervised => "SUPERVISED",
-                    AgeVerificationStatus.SupervisedApprovalPending => "SUPERVISED_APPROVAL_PENDING",
-                    AgeVerificationStatus.SupervisedApprovalDenied => "SUPERVISED_APPROVAL_DENIED",
-                    AgeVerificationStatus.Unknown => "UNKNOWN",
+                    AgeSignalsAccessStatus.Shared => "SHARED",
+                    AgeSignalsAccessStatus.NotShared => "NOT_SHARED",
+                    AgeSignalsAccessStatus.VerificationRequired => "VERIFICATION_REQUIRED",
+                    AgeSignalsAccessStatus.Unspecified => "UNSPECIFIED",
+                    _ => "UNRECOGNIZED"
+                };
+                string sourceStr = config.MockSource switch
+                {
+                    AgeRangeSourceTier.TierA => "\"TIER_A\"",
+                    AgeRangeSourceTier.TierB => "\"TIER_B\"",
+                    AgeRangeSourceTier.TierC => "\"TIER_C\"",
+                    AgeRangeSourceTier.TierD => "\"TIER_D\"",
+                    AgeRangeSourceTier.Unspecified => "\"UNSPECIFIED\"",
+                    AgeRangeSourceTier.Unrecognized => "\"UNRECOGNIZED\"",
+                    _ => "null"
+                };
+                string changeStr = config.MockChangeStatus switch
+                {
+                    SignificantChangeStatus.Approved => "\"APPROVED\"",
+                    SignificantChangeStatus.Pending => "\"PENDING\"",
+                    SignificantChangeStatus.Declined => "\"DECLINED\"",
+                    SignificantChangeStatus.Unspecified => "\"UNSPECIFIED\"",
+                    SignificantChangeStatus.Unrecognized => "\"UNRECOGNIZED\"",
                     _ => "null"
                 };
                 string loStr = config.AgeLower < 0 ? "null" : config.AgeLower.ToString();
                 string hiStr = config.AgeUpper < 0 ? "null" : config.AgeUpper.ToString();
 
                 json = $"<color=#569cd6>Success Response</color>\n" +
-                       $"  userStatus: <color=#ce9178>\"{statusStr}\"</color>\n" +
+                       $"  accessStatus: <color=#ce9178>\"{accessStr}\"</color>\n" +
+                       $"  ageRangeSource: <color=#ce9178>{sourceStr}</color>\n" +
+                       $"  significantChangeStatus: <color=#ce9178>{changeStr}</color>\n" +
                        $"  ageLower: <color=#b5cea8>{loStr}</color>\n" +
                        $"  ageUpper: <color=#b5cea8>{hiStr}</color>\n" +
                        $"  installId: <color=#569cd6>null</color>\n" +
-                       $"  mostRecentApprovalDate: <color=#b5cea8>0</color>";
+                       $"  significantChangeApprovalDate: <color=#b5cea8>0</color>";
             }
 
             var codeRect = EditorGUILayout.GetControlRect(false, 100);
@@ -321,9 +352,10 @@ namespace BizSim.Google.Play.AgeSignals.Editor
 
             EditorGUILayout.LabelField(
                 "This asset lets you test Age Signals without a real device or Google Play account.\n\n" +
-                "It simulates what the Google Play Age Signals API would return — a user's verification\n" +
-                "status and age range. The Age Signals Controller uses this mock data in Play Mode\n" +
-                "instead of calling the real API.\n\n" +
+                "It simulates what the Google Play Age Signals 0.0.4 API would return — an access\n" +
+                "status, an age range source tier, and (for supervised minors) a guardian approval\n" +
+                "status. The Age Signals Controller uses this mock data in Play Mode instead of\n" +
+                "calling the real API.\n\n" +
                 "This is Editor-only. It has no effect in actual builds.",
                 new GUIStyle(EditorStyles.wordWrappedLabel)
                 {
@@ -334,21 +366,35 @@ namespace BizSim.Google.Play.AgeSignals.Editor
             GUILayout.Space(6);
 
             EditorGUILayout.LabelField("How to use:", EditorStyles.boldLabel);
-            DrawBullet("Pick a Status — this is the user type you want to simulate.");
-            DrawBullet("Set an Age — only matters for supervised (child/teen) statuses.");
+            DrawBullet("Pick an Access Status and Source Tier — this is the user type you want to simulate.");
+            DrawBullet("Set an Age — drives the reported range for supervised and declared tiers.");
+            DrawBullet("Set Approval — only matters for TierB supervised minors (Declined blocks access).");
             DrawBullet("Enable \"Simulate Error\" to test error handling in your game.");
             DrawBullet("Assign this asset to the Mock Config field on the Age Signals Controller.");
             DrawBullet("Enter Play Mode → the controller reads this config instead of calling the API.");
 
             GUILayout.Space(6);
 
-            EditorGUILayout.LabelField("Status reference:", EditorStyles.boldLabel);
-            DrawStatusRef("Verified", "Confirmed 18+ adult (official ID, credit card, or age estimation).");
-            DrawStatusRef("Supervised", "Child/teen managed through Google Family Link.");
-            DrawStatusRef("Supervised Approval Pending", "Parental approval requested, waiting for response.");
-            DrawStatusRef("Supervised Approval Denied", "Parent explicitly denied access — blocks everything.");
-            DrawStatusRef("Unknown", "User exists but hasn't been verified yet.");
-            DrawStatusRef("Not Applicable", "Outside supported jurisdiction — no age data available.");
+            EditorGUILayout.LabelField("Access status reference:", EditorStyles.boldLabel);
+            DrawStatusRef("Shared", "Age signals were shared — age fields are populated.");
+            DrawStatusRef("Not Shared", "User declined sharing. In jurisdiction, so no age data.");
+            DrawStatusRef("Verification Required", "Mandatory jurisdiction, age unknown — verification needed.");
+            DrawStatusRef("Unspecified", "No status — treated fail-closed.");
+
+            GUILayout.Space(6);
+
+            EditorGUILayout.LabelField("Source tier reference:", EditorStyles.boldLabel);
+            DrawStatusRef("TierA", "Self-declared age. Unlocks non-adult features but is not full access.");
+            DrawStatusRef("TierB", "Guardian-managed supervised minor. Uses the Approval status.");
+            DrawStatusRef("TierC / TierD", "Assessed / highest verification — confirmed 18+ adult.");
+            DrawStatusRef("None / Unspecified", "No usable age data — fails closed.");
+
+            GUILayout.Space(6);
+
+            EditorGUILayout.LabelField("Approval reference (TierB):", EditorStyles.boldLabel);
+            DrawStatusRef("Approved", "Guardian approved the most recent change.");
+            DrawStatusRef("Pending", "Awaiting approval — access blocked until approved.");
+            DrawStatusRef("Declined", "Guardian denied approval — blocks everything.");
 
             GUILayout.Space(10);
 
@@ -361,6 +407,36 @@ namespace BizSim.Google.Play.AgeSignals.Editor
         // ─────────────────────────────────────────────
         // Helpers
         // ─────────────────────────────────────────────
+
+        /// <summary>
+        /// Computes the reported age range from a source tier and simulated age, matching
+        /// <see cref="AgeSignalsMockConfig.AgeLower"/> / <see cref="AgeSignalsMockConfig.AgeUpper"/>.
+        /// </summary>
+        private static void GetFakeRange(AgeRangeSourceTier source, int age, out int lower, out int upper)
+        {
+            switch (source)
+            {
+                case AgeRangeSourceTier.TierC:
+                case AgeRangeSourceTier.TierD:
+                    lower = age >= 18 ? 18 : age;
+                    upper = age >= 18 ? 150 : age;
+                    break;
+                case AgeRangeSourceTier.TierB:
+                    lower = Mathf.Max(0, age - 2);
+                    upper = age + 2;
+                    break;
+                case AgeRangeSourceTier.TierA:
+                    if (age < 13) { lower = 0; upper = 12; }
+                    else if (age < 16) { lower = 13; upper = 15; }
+                    else if (age < 18) { lower = 16; upper = 17; }
+                    else { lower = 18; upper = 150; }
+                    break;
+                default:
+                    lower = -1;
+                    upper = -1;
+                    break;
+            }
+        }
 
         private static void DrawCardBg(Rect rect)
         {

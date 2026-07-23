@@ -44,7 +44,8 @@ namespace BizSim.Google.Play.AgeSignals.Editor
         private SerializedProperty _decisionLogic;
         private SerializedProperty _mockConfig;
         private SerializedProperty _useFakeForTesting;
-        private SerializedProperty _fakeStatus;
+        private SerializedProperty _fakeSource;
+        private SerializedProperty _fakeChangeStatus;
         private SerializedProperty _fakeAge;
 
         // ── Foldout states (static — survive recompile) ──
@@ -80,7 +81,8 @@ namespace BizSim.Google.Play.AgeSignals.Editor
             _decisionLogic = serializedObject.FindProperty("_decisionLogic");
             _mockConfig = serializedObject.FindProperty("_mockConfig");
             _useFakeForTesting = serializedObject.FindProperty("_useFakeForTesting");
-            _fakeStatus = serializedObject.FindProperty("_fakeStatus");
+            _fakeSource = serializedObject.FindProperty("_fakeSource");
+            _fakeChangeStatus = serializedObject.FindProperty("_fakeChangeStatus");
             _fakeAge = serializedObject.FindProperty("_fakeAge");
 
             if (_packageVersion == null)
@@ -311,17 +313,9 @@ namespace BizSim.Google.Play.AgeSignals.Editor
         {
             if (_useFakeForTesting.boolValue)
             {
-                var status = (AgeVerificationStatus)_fakeStatus.enumValueIndex;
-                int age = _fakeAge.intValue;
-                return status switch
-                {
-                    AgeVerificationStatus.Verified => "Age: 18–150",
-                    AgeVerificationStatus.Supervised or
-                    AgeVerificationStatus.SupervisedApprovalPending or
-                    AgeVerificationStatus.SupervisedApprovalDenied =>
-                        $"Age: {Mathf.Max(0, age - 2)}–{age + 2}",
-                    _ => "Age: N/A"
-                };
+                var source = (AgeRangeSourceTier)_fakeSource.enumValueIndex;
+                GetFakeRange(source, _fakeAge.intValue, out int lo, out int hi);
+                return lo < 0 ? "Age: N/A" : $"Age: {lo}–{hi}";
             }
 
             if (_mockConfig.objectReferenceValue is AgeSignalsMockConfig mc && !mc.SimulateError)
@@ -331,6 +325,36 @@ namespace BizSim.Google.Play.AgeSignals.Editor
             }
 
             return null;
+        }
+
+        /// <summary>
+        /// Mirrors the runtime fake age-range computation: TierC/TierD → adult 18–150,
+        /// TierB → ±2 supervised bucket, TierA → self-declared band, otherwise no data.
+        /// </summary>
+        private static void GetFakeRange(AgeRangeSourceTier source, int age, out int lower, out int upper)
+        {
+            switch (source)
+            {
+                case AgeRangeSourceTier.TierC:
+                case AgeRangeSourceTier.TierD:
+                    lower = age >= 18 ? 18 : age;
+                    upper = age >= 18 ? 150 : age;
+                    break;
+                case AgeRangeSourceTier.TierB:
+                    lower = Mathf.Max(0, age - 2);
+                    upper = age + 2;
+                    break;
+                case AgeRangeSourceTier.TierA:
+                    if (age < 13) { lower = 0; upper = 12; }
+                    else if (age < 16) { lower = 13; upper = 15; }
+                    else if (age < 18) { lower = 16; upper = 17; }
+                    else { lower = 18; upper = 150; }
+                    break;
+                default:
+                    lower = -1;
+                    upper = -1;
+                    break;
+            }
         }
 
         // ══════════════════════════════════════════════════════════════════
@@ -451,25 +475,34 @@ namespace BizSim.Google.Play.AgeSignals.Editor
                     EditorGUILayout.Space(4);
                     EditorGUI.indentLevel++;
 
-                    EditorGUILayout.PropertyField(_fakeStatus,
-                        new GUIContent("Status", "Verification status to simulate."));
+                    EditorGUILayout.PropertyField(_fakeSource,
+                        new GUIContent("Source Tier",
+                            "Age range source tier to simulate. TierB = supervised minor; TierC/D = verified adult; TierA = self-declared."));
 
-                    var status = (AgeVerificationStatus)_fakeStatus.enumValueIndex;
-                    bool isSupervised = status == AgeVerificationStatus.Supervised ||
-                                       status == AgeVerificationStatus.SupervisedApprovalPending ||
-                                       status == AgeVerificationStatus.SupervisedApprovalDenied;
+                    var source = (AgeRangeSourceTier)_fakeSource.enumValueIndex;
+                    bool isSupervised = source == AgeRangeSourceTier.TierB;
 
-                    if (isSupervised && _fakeAge != null)
+                    using (new EditorGUI.DisabledGroupScope(!isSupervised))
+                    {
+                        EditorGUILayout.PropertyField(_fakeChangeStatus,
+                            new GUIContent("Approval",
+                                "Guardian approval status. Only meaningful for TierB supervised minors."));
+                    }
+
+                    bool hasAge = source == AgeRangeSourceTier.TierA ||
+                                  source == AgeRangeSourceTier.TierB ||
+                                  source == AgeRangeSourceTier.TierC ||
+                                  source == AgeRangeSourceTier.TierD;
+
+                    if (hasAge && _fakeAge != null)
                     {
                         EditorGUILayout.IntSlider(_fakeAge, 5, 25,
-                            new GUIContent("Age", "Supervised user age. API reports ±2 year bucket."));
-                        int age = _fakeAge.intValue;
-                        DrawNote($"Age range: {Mathf.Max(0, age - 2)} – {age + 2}");
+                            new GUIContent("Age", "Simulated age. Drives the reported range for supervised and declared tiers."));
+                        GetFakeRange(source, _fakeAge.intValue, out int lo, out int hi);
+                        DrawNote(lo < 0 ? "No age data for this source tier." : $"Age range: {lo} – {hi}");
                     }
-                    else if (status == AgeVerificationStatus.Verified)
-                        DrawNote("Verified = confirmed 18+ adult. Range: 18 – 150");
                     else
-                        DrawNote("No age data for this status.");
+                        DrawNote("No age data for this source tier.");
 
                     EditorGUI.indentLevel--;
                 }

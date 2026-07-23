@@ -13,39 +13,56 @@ namespace BizSim.Google.Play.AgeSignals.Tests
     public class AgeSignalsResultTests
     {
         [Test]
-        public void Verified_IsAdult_ReturnsTrue()
-        {
-            var result = new AgeSignalsResult { UserStatus = AgeVerificationStatus.Verified };
-            Assert.IsTrue(result.IsAdult);
-            Assert.IsTrue(result.HasAgeData);
-            Assert.IsFalse(result.IsSupervised);
-        }
-
-        [Test]
-        public void NotApplicable_HasAgeData_ReturnsFalse()
-        {
-            var result = new AgeSignalsResult { UserStatus = AgeVerificationStatus.NotApplicable };
-            Assert.IsFalse(result.HasAgeData);
-            Assert.IsFalse(result.IsAdult);
-        }
-
-        [TestCase(AgeVerificationStatus.Supervised)]
-        [TestCase(AgeVerificationStatus.SupervisedApprovalPending)]
-        [TestCase(AgeVerificationStatus.SupervisedApprovalDenied)]
-        public void SupervisedStatuses_IsSupervised_ReturnsTrue(AgeVerificationStatus status)
-        {
-            var result = new AgeSignalsResult { UserStatus = status };
-            Assert.IsTrue(result.IsSupervised);
-        }
-
-        [Test]
-        public void SupervisedApprovalDenied_IsAccessDenied_ReturnsTrue()
+        public void VerifiedAdult_IsVerifiedAdult_ReturnsTrue()
         {
             var result = new AgeSignalsResult
             {
-                UserStatus = AgeVerificationStatus.SupervisedApprovalDenied
+                AccessStatus = AgeSignalsAccessStatus.Shared,
+                AgeRangeSource = AgeRangeSourceTier.TierC,
+                AgeLower = 18,
+                AgeUpper = -1
             };
-            Assert.IsTrue(result.IsAccessDenied);
+            Assert.IsTrue(result.IsVerifiedAdult);
+            Assert.IsTrue(result.HasAgeData);
+            Assert.IsFalse(result.IsSupervisedMinor);
+        }
+
+        [Test]
+        public void NotShared_HasAgeData_ReturnsFalse()
+        {
+            var result = new AgeSignalsResult
+            {
+                AccessStatus = AgeSignalsAccessStatus.NotShared,
+                AgeRangeSource = AgeRangeSourceTier.None
+            };
+            Assert.IsFalse(result.HasAgeData);
+            Assert.IsFalse(result.IsVerifiedAdult);
+        }
+
+        [TestCase(SignificantChangeStatus.Approved)]
+        [TestCase(SignificantChangeStatus.Pending)]
+        [TestCase(SignificantChangeStatus.Declined)]
+        public void TierB_IsSupervisedMinor_ReturnsTrue(SignificantChangeStatus change)
+        {
+            var result = new AgeSignalsResult
+            {
+                AccessStatus = AgeSignalsAccessStatus.Shared,
+                AgeRangeSource = AgeRangeSourceTier.TierB,
+                SignificantChangeStatus = change
+            };
+            Assert.IsTrue(result.IsSupervisedMinor);
+        }
+
+        [Test]
+        public void TierB_Declined_IsApprovalDenied_ReturnsTrue()
+        {
+            var result = new AgeSignalsResult
+            {
+                AccessStatus = AgeSignalsAccessStatus.Shared,
+                AgeRangeSource = AgeRangeSourceTier.TierB,
+                SignificantChangeStatus = SignificantChangeStatus.Declined
+            };
+            Assert.IsTrue(result.IsApprovalDenied);
         }
 
         [TestCase(10, 12, 13, true)]   // age range 10-12, checking IsUnder(13) → true

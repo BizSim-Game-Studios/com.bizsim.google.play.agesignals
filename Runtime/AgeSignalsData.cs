@@ -104,94 +104,165 @@ namespace BizSim.Google.Play.AgeSignals
     }
 
     /// <summary>
-    /// User verification status returned by the Google Play Age Signals API.
-    /// Maps directly to <c>AgeSignalsVerificationStatus</c> enum values from the native SDK.
+    /// Access status returned by <c>requestAgeSignalsAccess</c> (Age Signals 0.0.4).
+    /// Mirrors the native <c>AgeSignalsStatus</c> IntDef.
     /// </summary>
-    public enum AgeVerificationStatus
+    public enum AgeSignalsAccessStatus
     {
-        /// <summary>User is 18+, verified via official ID, credit card, or age estimation.</summary>
-        Verified,
+        /// <summary>UNSPECIFIED (0) — no status; treated fail-closed.</summary>
+        Unspecified,
 
-        /// <summary>Supervised Google Account (managed through Family Link).</summary>
-        Supervised,
+        /// <summary>SHARED (1) — the user/parent shared age signals; age fields are populated.</summary>
+        Shared,
 
-        /// <summary>Supervised account awaiting parental approval for significant changes.</summary>
-        SupervisedApprovalPending,
+        /// <summary>NOT_SHARED (2) — the user declined sharing. In jurisdiction, so no age data.</summary>
+        NotShared,
 
-        /// <summary>Supervised account where parental approval was denied — access should be blocked.</summary>
-        SupervisedApprovalDenied,
+        /// <summary>VERIFICATION_REQUIRED (3) — mandatory jurisdiction, age unknown, verification needed.</summary>
+        VerificationRequired,
 
-        /// <summary>Age declared by the user or parent (Brazil Digital ECA). Has age range but no installId.</summary>
-        Declared,
-
-        /// <summary>User is in a supported jurisdiction but has not been verified or supervised.</summary>
-        Unknown,
-
-        /// <summary>User is outside supported jurisdiction (API returned null).</summary>
-        NotApplicable,
-
-        /// <summary>
-        /// The native SDK returned a status value this package version does not recognize
-        /// (e.g., a new value added to the beta Age Signals API after this release).
-        /// Treated fail-closed by <see cref="AgeSignalsDecisionLogic"/>: no access is granted
-        /// and verification is requested, rather than assuming an unrestricted adult.
-        /// </summary>
+        /// <summary>A value this package version does not recognize (forward-compat, fail-closed).</summary>
         Unrecognized
     }
 
     /// <summary>
-    /// Parsed result from the Age Signals API containing raw age data.
+    /// Source/method of the age range (Age Signals 0.0.4 <c>AgeRangeSource</c>).
+    /// Per Google docs — VERIFY tier meanings before shipping compliance logic:
+    /// TIER_A = self-declared, TIER_B = guardian-managed (supervised),
+    /// TIER_C = assessed (credit card / email / selfie / Gov-ID / Tax-ID),
+    /// TIER_D = highest verification (Gov-ID + selfie, or Digital ID).
+    /// </summary>
+    public enum AgeRangeSourceTier
+    {
+        /// <summary>No source (null / not shared).</summary>
+        None,
+
+        /// <summary>UNSPECIFIED (0).</summary>
+        Unspecified,
+
+        /// <summary>TIER_A (1) — self-declared.</summary>
+        TierA,
+
+        /// <summary>TIER_B (2) — guardian-managed (supervised minor).</summary>
+        TierB,
+
+        /// <summary>TIER_C (3) — assessed age.</summary>
+        TierC,
+
+        /// <summary>TIER_D (4) — highest verification.</summary>
+        TierD,
+
+        /// <summary>A value this package version does not recognize (fail-closed).</summary>
+        Unrecognized
+    }
+
+    /// <summary>
+    /// Parental/guardian approval status for a significant change (Age Signals 0.0.4
+    /// <c>SignificantChangeStatus</c>). Applies only to supervised accounts.
+    /// </summary>
+    public enum SignificantChangeStatus
+    {
+        /// <summary>No status (null — unsupervised, or supervised with no changes).</summary>
+        None,
+
+        /// <summary>UNSPECIFIED (0).</summary>
+        Unspecified,
+
+        /// <summary>APPROVED (1) — guardian approved the most recent change.</summary>
+        Approved,
+
+        /// <summary>PENDING (2) — awaiting approval; per Google, access should be blocked until approved.</summary>
+        Pending,
+
+        /// <summary>DECLINED (3) — guardian denied approval; access should be blocked.</summary>
+        Declined,
+
+        /// <summary>A value this package version does not recognize (fail-closed).</summary>
+        Unrecognized
+    }
+
+    /// <summary>
+    /// Parsed result from the Age Signals 0.0.4 API containing raw age data.
+    ///
+    /// <b>BREAKING (0.0.4):</b> the single <c>UserStatus</c> axis was removed and split into
+    /// <see cref="AccessStatus"/> (was it shared), <see cref="AgeRangeSource"/> (verification tier),
+    /// and <see cref="SignificantChangeStatus"/> (guardian approval). <c>MostRecentApprovalDate</c>
+    /// is renamed <see cref="SignificantChangeApprovalDateMs"/>.
     ///
     /// <b>PRIVACY POLICY:</b> This object is kept <b>in memory only</b>.
     /// It must NEVER be persisted to <c>PlayerPrefs</c>, disk, or transmitted to analytics.
     /// Use <see cref="AgeRestrictionFlags"/> for persistent storage.
+    ///
+    /// <b>COMPLIANCE:</b> the derived helpers below encode Google's documented mapping but the tier
+    /// semantics were NOT confirmed from verbatim primary source — every helper is marked VERIFY and
+    /// defaults fail-closed. Confirm with Google docs + legal before relying on the gambling gate.
     /// </summary>
     [Serializable]
     public class AgeSignalsResult
     {
-        public AgeVerificationStatus UserStatus;
+        public AgeSignalsAccessStatus AccessStatus;
+        public AgeRangeSourceTier AgeRangeSource;
+        public SignificantChangeStatus SignificantChangeStatus;
         public int AgeLower;        // -1 when null (age range lower bound)
-        public int AgeUpper;        // -1 when null (age range upper bound)
+        public int AgeUpper;        // -1 when null (age range upper bound; null = 18+ top band)
         public string InstallId;    // null if not supervised
-        public long MostRecentApprovalDateMs; // Unix ms, 0 when null
+        public long SignificantChangeApprovalDateMs; // Unix ms, 0 when null
 
-        /// <summary>Whether age data is available (not null/NotApplicable).</summary>
-        public bool HasAgeData => UserStatus != AgeVerificationStatus.NotApplicable;
-
-        /// <summary>Whether the user is a confirmed adult (18+).</summary>
-        public bool IsAdult => UserStatus == AgeVerificationStatus.Verified;
-
-        /// <summary>Whether the user is under parental supervision (any supervised state).</summary>
-        public bool IsSupervised =>
-            UserStatus == AgeVerificationStatus.Supervised ||
-            UserStatus == AgeVerificationStatus.SupervisedApprovalPending ||
-            UserStatus == AgeVerificationStatus.SupervisedApprovalDenied;
-
-        /// <summary>Whether the user's age was declared by the user or parent (Brazil Digital ECA).</summary>
-        public bool IsDeclared => UserStatus == AgeVerificationStatus.Declared;
+        /// <summary>Whether age signals were actually shared and a source tier is present.</summary>
+        public bool HasAgeData =>
+            AccessStatus == AgeSignalsAccessStatus.Shared
+            && AgeRangeSource != AgeRangeSourceTier.None
+            && AgeRangeSource != AgeRangeSourceTier.Unspecified;
 
         /// <summary>
-        /// Whether the SDK returned a status this package version does not recognize
-        /// (forward-compatibility guard — see <see cref="AgeVerificationStatus.Unrecognized"/>).
+        /// VERIFY: confirmed adult (18+) via assessed/verified tiers (C or D). Self-declared
+        /// (TIER_A) is deliberately NOT counted — the gambling gate requires verified adulthood.
         /// </summary>
-        public bool IsUnrecognized => UserStatus == AgeVerificationStatus.Unrecognized;
+        public bool IsVerifiedAdult =>
+            AgeLower >= 18
+            && (AgeRangeSource == AgeRangeSourceTier.TierC
+                || AgeRangeSource == AgeRangeSourceTier.TierD);
+
+        /// <summary>VERIFY: self-declared adult (TIER_A, 18+). NOT sufficient for adult-only features.</summary>
+        public bool IsDeclaredAdult =>
+            AgeLower >= 18 && AgeRangeSource == AgeRangeSourceTier.TierA;
+
+        /// <summary>VERIFY: supervised minor (guardian-managed account, TIER_B).</summary>
+        public bool IsSupervisedMinor => AgeRangeSource == AgeRangeSourceTier.TierB;
+
+        /// <summary>VERIFY: guardian approval was denied → block access.</summary>
+        public bool IsApprovalDenied =>
+            IsSupervisedMinor && SignificantChangeStatus == SignificantChangeStatus.Declined;
+
+        /// <summary>VERIFY: guardian approval pending → block until approved (new 0.0.4 behavior).</summary>
+        public bool IsApprovalPending =>
+            IsSupervisedMinor && SignificantChangeStatus == SignificantChangeStatus.Pending;
+
+        /// <summary>User is in a mandatory jurisdiction with unknown age — verification needed.</summary>
+        public bool NeedsVerification =>
+            AccessStatus == AgeSignalsAccessStatus.VerificationRequired;
+
+        /// <summary>
+        /// The SDK returned a source/change/access value this package version does not recognize.
+        /// Fail-closed forward-compatibility guard.
+        /// </summary>
+        public bool IsUnrecognized =>
+            AgeRangeSource == AgeRangeSourceTier.Unrecognized
+            || SignificantChangeStatus == SignificantChangeStatus.Unrecognized
+            || AccessStatus == AgeSignalsAccessStatus.Unrecognized;
 
         /// <summary>Whether a concrete age range is present (<see cref="AgeUpper"/> is non-negative).</summary>
         public bool HasAgeRange => AgeUpper >= 0;
 
         /// <summary>
         /// Whether the user's entire age range falls below the given age.
-        /// Returns false if no age data is available.
+        /// Returns false if no upper bound (null upper = 18+ top band) or no data.
         /// </summary>
         public bool IsUnder(int age)
         {
-            if (AgeUpper < 0) return false; // No data available
+            if (AgeUpper < 0) return false; // No upper bound (top band) or no data
             return AgeUpper < age;
         }
-
-        /// <summary>Whether parental approval was denied (access should be blocked).</summary>
-        public bool IsAccessDenied =>
-            UserStatus == AgeVerificationStatus.SupervisedApprovalDenied;
     }
 
     /// <summary>

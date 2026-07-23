@@ -13,6 +13,16 @@ This document describes the data practices of the **Google Play Age Signals Brid
 | Restriction flags (behavior booleans) | Derived locally | No | Feature gating decisions | `PlayerPrefs`, auto-expires after **24 hours** |
 | API call success/error | Yes (if `BIZSIM_FIREBASE` enabled) | Firebase Analytics | Technical monitoring | Per Firebase Analytics retention policy |
 
+## Age Signals 0.0.4 — in-app sharing consent (v2.0.0+)
+
+Version 0.0.4 adds `requestAgeSignalsAccess()`, which may present a **Google-managed** age-sharing
+prompt (via `AgeSharingConsentWrapperActivity`, bundled by the SDK) for unsupervised users in
+mandatory jurisdictions (e.g. Brazil). This UI is owned and rendered by Google Play, not by this
+package — no additional data is collected or stored by BizSim as a result. The response splits into
+three axes (access status, age-range source tier, guardian approval); the same in-memory-only /
+24-hour-flag retention rules apply. Declare age/age-range collection in your Play Console Data Safety
+form if you were not already.
+
 ## Log output redaction (v1.0.4+)
 
 Raw age numerics (`age=[lower-upper]`, `AgeLower`, `AgeUpper`) are logged only at the
