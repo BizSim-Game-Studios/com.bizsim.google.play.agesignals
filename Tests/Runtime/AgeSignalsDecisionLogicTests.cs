@@ -46,10 +46,17 @@ namespace BizSim.Google.Play.AgeSignals.Tests
         }
 
         [Test]
-        public void NotShared_FailsClosed_NoData()
+        public void NotShared_IsUnrestricted_NoData()
         {
-            // 0.0.4: an in-jurisdiction user who did not share age signals fails closed.
-            // Out-of-jurisdiction users no longer reach here — they surface as an API error.
+            // NOT_SHARED is what a user OUTSIDE a live jurisdiction reports - Google's sample
+            // comments that branch as "user didn't share age range, parent rejected the request,
+            // or not eligible", and only Brazil and post-2026-05-28 Texas accounts are live. It
+            // is also what an in-jurisdiction user who declined reports; the SDK does not
+            // distinguish them, so the app cannot either.
+            //
+            // This asserted the opposite until 2026-08-29, on the assumption that
+            // out-of-jurisdiction users arrived as an API error instead. They do not, and failing
+            // this closed restricted roughly the entire player base rather than a slice of it.
             var result = new AgeSignalsResult
             {
                 AccessStatus = AgeSignalsAccessStatus.NotShared,
@@ -60,8 +67,30 @@ namespace BizSim.Google.Play.AgeSignals.Tests
 
             _logic.ComputeFlags(result, flags);
 
+            Assert.IsTrue(flags.FullAccessGranted);
+            Assert.IsTrue(flags.IsFeatureEnabled(AgeFeatureKeys.Gambling));
+            Assert.IsTrue(flags.PersonalizedAdsEnabled);
+            Assert.IsFalse(flags.NeedsVerification);
+            Assert.IsFalse(flags.AccessDenied);
+        }
+
+        [Test]
+        public void UnspecifiedAccess_FailsClosed()
+        {
+            // The boundary of the NOT_SHARED exemption above. UNSPECIFIED is the SDK declining to
+            // answer, not answering "no age was shared", so it must keep failing closed - without
+            // this the exemption would widen to every unreadable response.
+            var result = new AgeSignalsResult
+            {
+                AccessStatus = AgeSignalsAccessStatus.Unspecified,
+                AgeRangeSource = AgeRangeSourceTier.None,
+                AgeLower = -1, AgeUpper = -1
+            };
+            var flags = new AgeRestrictionFlags();
+
+            _logic.ComputeFlags(result, flags);
+
             Assert.IsFalse(flags.FullAccessGranted);
-            Assert.IsFalse(flags.IsFeatureEnabled(AgeFeatureKeys.Gambling));
             Assert.IsFalse(flags.PersonalizedAdsEnabled);
             Assert.IsTrue(flags.NeedsVerification);
         }

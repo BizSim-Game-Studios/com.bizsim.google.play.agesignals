@@ -7,6 +7,14 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [2.0.0] - 2026-07-23
 
+### Fixed
+- **`NOT_SHARED` no longer fails closed.** It is the ordinary status for every user outside a live
+  jurisdiction, so restricting it restricted almost the whole audience. It now behaves as 0.0.3's
+  no-data case did: full access, personalized ads enabled, no verification nudge. The exemption is
+  deliberately narrow — `UNSPECIFIED`, an unreadable source tier, `VERIFICATION_REQUIRED`, a
+  pending guardian approval and any unrecognized value all still fail closed, and there is a test
+  pinning that boundary.
+
 ### BREAKING
 - **Upgraded to Google Play Age Signals `0.0.4`** (0.0.3 and below deprecated by Google on 2026-10-31).
   0.0.4 replaced the single `userStatus` axis with three: access (shared/not-shared/verification-required),
@@ -30,8 +38,14 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - The tier→adult mapping (verified adult = TIER_C/TIER_D at 18+; self-declared TIER_A does NOT unlock
   adult-only features) follows Google's documented pattern but is **not legally reviewed**. Every
   derived helper defaults **fail-closed**.
-- Out-of-jurisdiction users no longer surface here as "no data = full access"; that case is now the
-  `API_NOT_AVAILABLE` error path. Confirm the error fallback grants full access before release.
+- **Out-of-jurisdiction users report `NOT_SHARED`, not an error — corrected 2026-08-29.** This entry
+  previously claimed they surface as `API_NOT_AVAILABLE` and asked for the error fallback to be
+  confirmed. They do not: Google's own sample comments the non-SHARED branch as covering "user
+  didn't share age range, parent rejected the request, or **not eligible**", while
+  `API_NOT_AVAILABLE` is documented only as an outdated Play Store and is retryable. Since only
+  Brazil (2026-03-17) and Texas accounts created after 2026-05-28 are live jurisdictions, failing
+  `NOT_SHARED` closed would have restricted nearly every user rather than a slice of them —
+  switching off personalized ads and rewarded video across the board on the day 2.0.0 shipped.
 - Device testing of the consent prompt is required. See `DevelopmentPlans/AGE_SIGNALS_0.0.4_MIGRATION.md`.
 
 ## [1.4.3] - 2026-07-16

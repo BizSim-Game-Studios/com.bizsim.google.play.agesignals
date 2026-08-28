@@ -115,7 +115,13 @@ namespace BizSim.Google.Play.AgeSignals
         /// <summary>SHARED (1) — the user/parent shared age signals; age fields are populated.</summary>
         Shared,
 
-        /// <summary>NOT_SHARED (2) — the user declined sharing. In jurisdiction, so no age data.</summary>
+        /// <summary>
+        /// NOT_SHARED (2) — no age signals. This covers BOTH an in-jurisdiction user who declined
+        /// and a user who is not eligible at all, i.e. outside a live jurisdiction; Google's own
+        /// sample groups them into this one branch and the SDK gives no way to tell them apart.
+        /// Since only Brazil and post-2026-05-28 Texas accounts are live, this is the ordinary
+        /// status for nearly every user. This line said "In jurisdiction" until 2026-08-29.
+        /// </summary>
         NotShared,
 
         /// <summary>VERIFICATION_REQUIRED (3) — mandatory jurisdiction, age unknown, verification needed.</summary>
