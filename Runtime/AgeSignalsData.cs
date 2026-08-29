@@ -240,7 +240,19 @@ namespace BizSim.Google.Play.AgeSignals
         public bool IsApprovalDenied =>
             IsSupervisedMinor && SignificantChangeStatus == SignificantChangeStatus.Declined;
 
-        /// <summary>VERIFY: guardian approval pending → block until approved (new 0.0.4 behavior).</summary>
+        /// <summary>
+        /// A guardian has not yet approved one or more significant changes.
+        ///
+        /// This does NOT mean "block the app". Google's wording (understand-age-signals-responses
+        /// + notify-significant-changes, read 2026-08-29) makes the developer responsible for
+        /// restricting the content or functionality RELATING TO the significant change, keyed on
+        /// this status — not for restricting everything. An earlier version of this comment said
+        /// "block until approved" and the decision logic acted on it; that was a misreading.
+        ///
+        /// Also note a significant change only exists once the developer declares one in Play
+        /// Console, and only supervised users ever carry an approval status, so this is null —
+        /// and this property false — for every user until that first declaration.
+        /// </summary>
         public bool IsApprovalPending =>
             IsSupervisedMinor && SignificantChangeStatus == SignificantChangeStatus.Pending;
 

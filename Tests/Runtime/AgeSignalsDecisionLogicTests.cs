@@ -178,6 +178,39 @@ namespace BizSim.Google.Play.AgeSignals.Tests
         }
 
         [Test]
+        public void ApprovalPending_KeepsAgeAppropriateAccess_NotABlackout()
+        {
+            // A supervised 14-year-old waiting on a parent to approve a significant change.
+            //
+            // ComputeFlags used to fail this closed and switch every feature off, on a comment
+            // that read "block until approved (new 0.0.4 behavior)". Google's wording says
+            // something narrower: restrict the content or functionality RELATING TO the
+            // significant change. The age band is still present and still usable, so the ordinary
+            // per-feature gating applies and chat (13+) stays on while marketplace (16+) and
+            // gambling (18+) stay off - the same answer this player would get with no pending
+            // change at all.
+            //
+            // A consumer that needs to gate the changed feature specifically reads
+            // result.IsApprovalPending in its own override; only it knows which feature changed.
+            var result = new AgeSignalsResult
+            {
+                AccessStatus = AgeSignalsAccessStatus.Shared,
+                AgeRangeSource = AgeRangeSourceTier.TierB,
+                SignificantChangeStatus = SignificantChangeStatus.Pending,
+                AgeLower = 13, AgeUpper = 15
+            };
+            var flags = new AgeRestrictionFlags();
+
+            _logic.ComputeFlags(result, flags);
+
+            Assert.IsFalse(flags.AccessDenied);
+            Assert.IsTrue(flags.IsFeatureEnabled(AgeFeatureKeys.Chat));
+            Assert.IsFalse(flags.IsFeatureEnabled(AgeFeatureKeys.Marketplace));
+            Assert.IsFalse(flags.IsFeatureEnabled(AgeFeatureKeys.Gambling));
+            Assert.IsFalse(flags.FullAccessGranted);
+        }
+
+        [Test]
         public void VerificationRequired_SetsNeedsVerification()
         {
             var result = new AgeSignalsResult

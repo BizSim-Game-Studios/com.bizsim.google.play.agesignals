@@ -108,9 +108,18 @@ namespace BizSim.Google.Play.AgeSignals
 
             flags.AccessDenied = false;
 
-            // Fail-closed guards: unrecognized SDK values, guardian approval PENDING (new 0.0.4
-            // "block until approved" behavior), and a mandatory-jurisdiction verification request.
-            // Each is a state where the SDK is telling us to restrict.
+            // Fail-closed guards: unrecognized SDK values and a mandatory-jurisdiction
+            // verification request. Each is a state where the SDK is telling us to restrict.
+            //
+            // Guardian approval PENDING is deliberately NOT here, and used to be. Google's
+            // wording (notify-significant-changes, read 2026-08-29) makes us responsible for
+            // restricting the content RELATING TO the significant change, not the whole app —
+            // and a pending approval still carries a usable age band, so the ordinary
+            // per-feature gating below is both sufficient and more accurate. A supervised
+            // 13-year-old waiting on a parent now gets 13-year-old access instead of a blackout.
+            // The consumer that wants to gate the changed feature specifically reads
+            // result.IsApprovalPending in its own ComputeFlags override, which is where the
+            // knowledge of WHICH feature changed lives. DECLINED still blocks, above.
             //
             // NOT_SHARED is the one no-data status that does NOT restrict - see the note above.
             // It is what every user outside a live jurisdiction reports, and Google groups "not
@@ -121,7 +130,6 @@ namespace BizSim.Google.Play.AgeSignals
 
             bool failClosed =
                 result.IsUnrecognized
-                || result.IsApprovalPending
                 || result.NeedsVerification
                 || (!noAgeShared && !result.HasAgeData);
 
