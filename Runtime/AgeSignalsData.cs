@@ -261,7 +261,7 @@ namespace BizSim.Google.Play.AgeSignals
                 if (Features[i].key == key)
                     return Features[i].enabled;
             }
-#if UNITY_EDITOR || DEVELOPMENT_BUILD
+#if UNITY_EDITOR || DEBUG
             // Only warn if Features has been populated — empty list means "not yet resolved"
             if (Features.Count > 0)
                 UnityEngine.Debug.LogWarning(
