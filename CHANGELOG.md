@@ -5,7 +5,7 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
-## [2.0.0] - 2026-07-23
+## [2.0.0] - 2026-09-23
 
 ### Fixed
 - **`NOT_SHARED` no longer fails closed.** It is the ordinary status for every user outside a live
@@ -14,6 +14,10 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   deliberately narrow — `UNSPECIFIED`, an unreadable source tier, `VERIFICATION_REQUIRED`, a
   pending guardian approval and any unrecognized value all still fail closed, and there is a test
   pinning that boundary.
+
+### Changed
+- The debug-only mock path in `AgeSignalsData` is compiled under `UNITY_EDITOR || DEBUG` instead of
+  `DEVELOPMENT_BUILD` (Unity 6.6 analyzer UAC0009).
 
 ### BREAKING
 - **Upgraded to Google Play Age Signals `0.0.4`** (0.0.3 and below deprecated by Google on 2026-10-31).
@@ -32,7 +36,9 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 ### Added
 - Two-phase flow: `requestAgeSignalsAccess()` (may show the Google-managed sharing prompt in mandatory
   jurisdictions, e.g. Brazil) → `checkAgeSignals()` when signals are shared.
-- Guardian approval **PENDING** now blocks access until approved (new 0.0.4 behavior).
+- Guardian approval **PENDING** keeps the ordinary per-feature gating of the reported age band; a
+  consumer that must gate the changed feature reads `IsApprovalPending` in its own override.
+  **DECLINED** still blocks everything.
 
 ### Compliance — VERIFY BEFORE SHIPPING
 - The tier→adult mapping (verified adult = TIER_C/TIER_D at 18+; self-declared TIER_A does NOT unlock
