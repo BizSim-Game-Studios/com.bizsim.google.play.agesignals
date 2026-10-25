@@ -46,23 +46,23 @@ namespace BizSim.Google.Play.AgeSignals.Editor
             if (edm4uType == null)
             {
                 const string message =
-                    "EDM4U (External Dependency Manager for Unity) is not installed.\n\n" +
+                    "External Dependency Manager (com.unity.external-dependency-manager) is not installed.\n\n" +
                     "This package uses Editor/Dependencies.xml to resolve " +
                     "'com.google.android.play:age-signals:0.0.3'.\n\n" +
-                    "Without EDM4U, the native library will be missing and " +
+                    "Without it, the native library will be missing and " +
                     "you'll get ClassNotFoundException at runtime.";
 
                 Debug.LogWarning("[AgeSignals Build Validator] " + message);
 
                 bool openPage = EditorUtility.DisplayDialog(
-                    "Age Signals — Missing EDM4U",
+                    "Age Signals — Missing External Dependency Manager",
                     message,
-                    "Download EDM4U",
+                    "Open EDM docs",
                     "Ignore");
 
                 if (openPage)
                 {
-                    Application.OpenURL("https://github.com/googlesamples/unity-jar-resolver");
+                    Application.OpenURL("https://docs.unity3d.com/Packages/com.unity.external-dependency-manager@2.1/manual/index.html");
                 }
             }
         }
