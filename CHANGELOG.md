@@ -5,6 +5,21 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [3.0.0] - 2026-11-06
+
+### Added
+- `AgeSignalsController.SetDecisionLogic(AgeSignalsDecisionLogic)`: swap the decision logic at runtime
+  (flags cached under another configuration are discarded and `CurrentFlags` is reloaded).
+- `MemoryAgeSignalsCacheProvider`: keeps the flags in memory only. `SetCacheProvider(new MemoryAgeSignalsCacheProvider())`
+  means nothing derived from the API result is written to disk.
+
+### Removed
+- **BREAKING:** `AgeRestrictionFlags.PersonalizedAdsEnabled`, `AgeSignalsDecisionLogic.PersonalizedAdsMinAge` and
+  the Ads Threshold field. The age signal is not an input to ads, marketing, profiling or analytics, and
+  out-of-jurisdiction players (`NOT_SHARED`, no data) used to be reported as personalized-ads eligible. Decide
+  ad personalization from your own consent and age-screen answer. Old cached JSON that still carries the field
+  loads fine (unknown field ignored); the decision-logic config hash changed, so cached flags are recomputed once.
+
 ## [2.1.0] - 2026-10-25
 
 ### Changed
