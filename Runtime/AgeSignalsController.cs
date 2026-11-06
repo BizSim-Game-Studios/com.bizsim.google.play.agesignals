@@ -18,8 +18,10 @@ namespace BizSim.Google.Play.AgeSignals
     /// <b>Privacy Policy Compliance:</b>
     /// <list type="bullet">
     /// <item>Raw age data (<see cref="AgeSignalsResult"/>) is kept in memory only — never persisted.</item>
-    /// <item>Only behavior flags (<see cref="AgeRestrictionFlags"/>) are saved to <c>PlayerPrefs</c>
-    ///       and automatically cleared if older than <see cref="FLAGS_MAX_AGE_HOURS"/> hours.</item>
+    /// <item>Behavior flags (<see cref="AgeRestrictionFlags"/>) are kept in memory by default
+    ///       (<see cref="AgeSignalsCacheMode.Memory"/>); a game that wants them on disk chooses
+    ///       <c>PlayerPrefs</c> explicitly, and they are cleared if older than
+    ///       <see cref="FLAGS_MAX_AGE_HOURS"/> hours.</item>
     /// <item>The API is queried on every app launch — results are not cached across sessions.</item>
     /// <item>Analytics events contain only "success"/"error" strings — no age information.</item>
     /// </list>
@@ -88,8 +90,8 @@ namespace BizSim.Google.Play.AgeSignals
         // --- Public State ---
 
         /// <summary>
-        /// Current restriction flags. Loaded from <c>PlayerPrefs</c> on startup
-        /// and updated after each successful API call.
+        /// Current restriction flags. Restrictive defaults until the first API answer
+        /// (or the cached flags when a persistent cache mode was chosen); updated after each successful API call.
         /// </summary>
         public AgeRestrictionFlags CurrentFlags { get; private set; }
 
@@ -167,8 +169,8 @@ namespace BizSim.Google.Play.AgeSignals
 #endif
 
         [Header("Cache")]
-        [Tooltip("Use AES-256 encrypted PlayerPrefs cache instead of plain JSON.")]
-        [SerializeField] private bool _useEncryptedCache = false;
+        [Tooltip("Memory (default): nothing derived from the API result is written to disk. PlayerPrefs / EncryptedPlayerPrefs persist the flags and are an explicit choice.")]
+        [SerializeField] private AgeSignalsCacheMode _cacheMode = AgeSignalsCacheMode.Memory;
 
         [Header("Logging")]
         [Tooltip("Minimum log level. Silent suppresses all output including errors.")]
@@ -196,9 +198,21 @@ namespace BizSim.Google.Play.AgeSignals
 
             if (_cacheProvider == null)
             {
-                _cacheProvider = _useEncryptedCache
-                    ? new EncryptedPlayerPrefsCacheProvider()
-                    : new PlayerPrefsCacheProvider();
+                switch (_cacheMode)
+                {
+                    case AgeSignalsCacheMode.PlayerPrefs:
+                        _cacheProvider = new PlayerPrefsCacheProvider();
+                        break;
+                    case AgeSignalsCacheMode.EncryptedPlayerPrefs:
+                        _cacheProvider = new EncryptedPlayerPrefsCacheProvider();
+                        break;
+                    default:
+                        // Flags written by an earlier version must not outlive the upgrade.
+                        new PlayerPrefsCacheProvider().Clear();
+                        new EncryptedPlayerPrefsCacheProvider().EraseAll();
+                        _cacheProvider = new MemoryAgeSignalsCacheProvider();
+                        break;
+                }
             }
 
             LoadRestrictionFlags(); // Load previous session flags as fallback

@@ -96,7 +96,7 @@ Cache interface. Custom implementations MUST persist only derived flags, never r
 | `Save(flags)` | Persists derived flags |
 | `Clear()` | Deletes cached flags |
 
-Built-in providers: `EncryptedPlayerPrefsCacheProvider` (default), `PlayerPrefsCacheProvider`.
+Built-in providers: `MemoryAgeSignalsCacheProvider` (default, `AgeSignalsCacheMode.Memory`), `PlayerPrefsCacheProvider`, `EncryptedPlayerPrefsCacheProvider` (the last two are explicit opt-ins).
 
 ## AgeSignalsMockConfig
 

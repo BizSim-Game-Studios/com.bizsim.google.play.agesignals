@@ -23,7 +23,7 @@ at `Awake()` and uses them as defaults for logging, mock behavior, and analytics
 The `AgeSignalsController` MonoBehaviour exposes:
 
 - **MockConfig** — assign an `AgeSignalsMockConfig` ScriptableObject for editor testing
-- **Cache Provider** — defaults to `EncryptedPlayerPrefsCacheProvider`; can be swapped at runtime
+- **Cache Provider** — defaults to memory-only (`AgeSignalsCacheMode.Memory`); can be swapped at runtime
 
 ### Per-instance overrides
 

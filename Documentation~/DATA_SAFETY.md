@@ -10,7 +10,7 @@ This document describes the data practices of the **Google Play Age Signals Brid
 | Age range (lower/upper bounds) | Yes (from Google Play API) | No | Age-appropriate content gating | **In-memory only** — never persisted to disk |
 | Verification status | Yes (from Google Play API) | No | Age-appropriate content gating | **In-memory only** — never persisted to disk |
 | Install ID | Yes (for supervised accounts only) | No | Supervised account identification | **In-memory only** — never persisted to disk |
-| Restriction flags (behavior booleans) | Derived locally | No | Feature gating decisions | `PlayerPrefs`, auto-expires after **24 hours** |
+| Restriction flags (behavior booleans) | Derived locally | No | Feature gating decisions | **In-memory only by default**; written to `PlayerPrefs` (auto-expires after **24 hours**) only if the game selects `AgeSignalsCacheMode.PlayerPrefs` / `EncryptedPlayerPrefs` |
 | API call success/error | Yes (if `BIZSIM_FIREBASE` enabled) | Firebase Analytics | Technical monitoring | Per Firebase Analytics retention policy |
 
 ## Age Signals 0.0.4 — in-app sharing consent (v2.0.0+)
@@ -52,9 +52,9 @@ RAM during the decision-making process and is discarded immediately after
 `AgeRestrictionFlags` are computed.
 
 ### 2. Restriction Flags — 24-Hour TTL
-`AgeRestrictionFlags` are saved to `PlayerPrefs` as boolean feature flags.
-These flags contain **zero raw age data** — only behavioral decisions like
-"can show personalized ads" or "casino feature enabled". Flags are automatically
+`AgeRestrictionFlags` are kept in memory by default (`AgeSignalsCacheMode.Memory`); a game may opt in to
+`PlayerPrefs` storage (24-hour expiry). These flags contain **zero raw age data** — only behavioral decisions like
+"casino feature enabled". Flags are automatically
 expired and deleted after 24 hours to comply with Google's policy against
 long-term storage of age-signal-derived data.
 

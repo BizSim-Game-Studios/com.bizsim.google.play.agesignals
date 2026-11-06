@@ -14,7 +14,7 @@ Queries age verification status via JNI, derives behavior restriction flags, and
 - **Java-to-C# Bridge** — Play Core `AgeSignalsManager` wrapped in a main-thread-safe singleton
 - **Event-based and async APIs** — `CheckAgeSignals()` (events) + `CheckAgeSignalsAsync()` returning `AgeRestrictionFlags`
 - **Decision engine** — Pluggable `AgeSignalsDecisionLogic` ScriptableObject with configurable feature list and age thresholds
-- **Encrypted flag cache** — Derived restriction flags cached in encrypted `PlayerPrefs`, auto-expire after 24 hours; raw age data never persisted
+- **Memory-only flag cache by default** — Derived restriction flags are not stored on the device; persisting them in (encrypted) `PlayerPrefs` (24 h expiry) is an explicit `AgeSignalsCacheMode` choice; raw age data never persisted
 - **Mock provider** — 14 ScriptableObject presets covering adult/child/teen, supervised/approved/denied, and error scenarios
 - **Analytics adapter** — Optional `IAgeSignalsAnalyticsAdapter` with a Firebase implementation guarded by `BIZSIM_FIREBASE`
 - **UniTask support** — Optional extension assembly guarded by `BIZSIM_UNITASK`
@@ -115,7 +115,7 @@ Key types:
 | `AgeSignalsController` | Singleton MonoBehaviour — `CheckAgeSignals()` / `CheckAgeSignalsAsync()` |
 | `AgeVerificationStatus` | Enum: `Verified`, `Supervised`, `SupervisedApprovalPending`, `SupervisedApprovalDenied`, `Unknown`, `NotApplicable` |
 | `AgeSignalsResult` | Raw API response — in-memory only, never persisted |
-| `AgeRestrictionFlags` | Behavior flags derived from result — encrypted `PlayerPrefs` cache |
+| `AgeRestrictionFlags` | Behavior flags derived from result — in memory by default |
 | `AgeSignalsDecisionLogic` | Pluggable ScriptableObject with feature list and age thresholds |
 | `AgeSignalsError` | Error details: `errorCode`, `errorMessage`, `isRetryable` |
 | `AgeSignalsMockConfig` | ScriptableObject for editor testing |
@@ -125,7 +125,7 @@ Key types:
 This package enforces a strict three-layer privacy model:
 
 - **Raw age data** (`AgeSignalsResult`) exists **in memory only** — it is never written to disk, logs, or network in any form.
-- **Derived behavior flags** (`AgeRestrictionFlags`) are the only persisted state. They are written to an encrypted `PlayerPrefs` key and contain no age value — only boolean capability flags (e.g. `FullAccessGranted`, `NeedsVerification`).
+- **Derived behavior flags** (`AgeRestrictionFlags`) are the only persisted state. By default they stay in memory; with `AgeSignalsCacheMode.EncryptedPlayerPrefs` they are written to an encrypted `PlayerPrefs` key. They contain no age value — only boolean capability flags (e.g. `FullAccessGranted`, `NeedsVerification`).
 - **Analytics events** report only technical success/failure signals — zero age or demographic information is transmitted.
 
 This split means a data breach of `PlayerPrefs` reveals nothing about the user's age. The `IAgeSignalsCacheProvider` interface lets you substitute your own storage backend; any custom implementation must preserve the same raw/derived split.
@@ -145,7 +145,7 @@ The `BIZSIM_FIREBASE` scripting define enables the Firebase Analytics adapter. W
 
 ### Data Collected
 
-This package stores one item on-device: a set of derived boolean behavior flags (`AgeRestrictionFlags`) written to encrypted `PlayerPrefs`. These flags indicate capability grants (e.g. whether personalized ads are enabled) and **do not contain any age value, date of birth, or demographic data**. They are derived locally on-device from the Age Signals API result and are never transmitted off the device by this package.
+By default this package stores nothing on-device. If the game selects a persistent `AgeSignalsCacheMode`, it stores one item: a set of derived boolean behavior flags (`AgeRestrictionFlags`) in `PlayerPrefs`. These flags indicate capability grants (e.g. whether a feature is enabled) and **do not contain any age value, date of birth, or demographic data**. They are derived locally on-device from the Age Signals API result and are never transmitted off the device by this package.
 
 The raw age signal result (`AgeSignalsResult`) from the Google Play API is held in memory for the duration of the decision-logic call only and is discarded immediately after the flags are derived.
 
@@ -161,7 +161,7 @@ The raw age signal result (`AgeSignalsResult`) from the Google Play API is held 
 
 When filling out the [Data Safety form](https://support.google.com/googleplay/android-developer/answer/10787469) in Google Play Console:
 
-1. **Data types collected**: None collected by this package (the encrypted `PlayerPrefs` entry is local on-device storage, not "data collection" under Play's definition)
+1. **Data types collected**: None collected by this package (a `PlayerPrefs` entry, only when the game opts in, is local on-device storage, not "data collection" under Play's definition)
 2. **Data shared with third parties**: No
 3. **Data encrypted in transit**: N/A — no data leaves the device
 4. **Users can request deletion**: The encrypted flags can be cleared programmatically via `AgeSignalsController.Instance.ClearCache()` (or the GDPR `ForgetAll()` API)

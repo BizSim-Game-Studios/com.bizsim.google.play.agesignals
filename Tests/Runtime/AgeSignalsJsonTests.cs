@@ -108,7 +108,7 @@ namespace BizSim.Google.Play.AgeSignals.Tests
             Assert.AreEqual(-3, error.errorCode);
             Assert.AreEqual("Network unavailable", error.errorMessage);
             Assert.IsTrue(error.isRetryable);
-            Assert.AreEqual("NETWORK_ERROR", error.ErrorCodeName);
+            Assert.AreEqual("NetworkError", error.ErrorCodeName);
         }
 
         [Test]
@@ -124,7 +124,7 @@ namespace BizSim.Google.Play.AgeSignals.Tests
 
             Assert.AreEqual(-9, error.errorCode);
             Assert.IsFalse(error.isRetryable);
-            Assert.AreEqual("APP_NOT_OWNED", error.ErrorCodeName);
+            Assert.AreEqual("AppNotOwned", error.ErrorCodeName);
         }
 
         [Test]

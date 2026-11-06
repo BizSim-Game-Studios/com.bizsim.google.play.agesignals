@@ -33,7 +33,7 @@ AgeSignalsController (MonoBehaviour singleton)
     |
     +-- IAgeSignalsCacheProvider
     |       |
-    |       +-- EncryptedPlayerPrefsCacheProvider (default)
+    |       +-- EncryptedPlayerPrefsCacheProvider (opt-in)
     |       +-- PlayerPrefsCacheProvider (alternative)
     |
     +-- IAgeSignalsAnalyticsAdapter (optional, NO age data)
@@ -85,7 +85,7 @@ Provider selection happens at compile time:
 
 Built-in cache providers:
 
-- **`EncryptedPlayerPrefsCacheProvider`** (default) — encrypts flag values before storing
+- **`EncryptedPlayerPrefsCacheProvider`** (opt-in) — encrypts flag values before storing
   in PlayerPrefs. Uses a per-device key.
 - **`PlayerPrefsCacheProvider`** — plain PlayerPrefs storage. Suitable for development
   and testing only.

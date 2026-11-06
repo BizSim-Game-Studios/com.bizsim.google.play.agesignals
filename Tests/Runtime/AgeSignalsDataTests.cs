@@ -84,11 +84,11 @@ namespace BizSim.Google.Play.AgeSignals.Tests
     [TestFixture]
     public class AgeSignalsErrorTests
     {
-        [TestCase(-1, "API_NOT_AVAILABLE")]
-        [TestCase(-3, "NETWORK_ERROR")]
-        [TestCase(-9, "APP_NOT_OWNED")]
-        [TestCase(-100, "INTERNAL_ERROR")]
-        [TestCase(-999, "UNKNOWN_-999")]
+        [TestCase(-1, "ApiNotAvailable")]
+        [TestCase(-3, "NetworkError")]
+        [TestCase(-9, "AppNotOwned")]
+        [TestCase(-100, "InternalError")]
+        [TestCase(-999, "Unknown(-999)")]
         public void ErrorCodeName_MapsCorrectly(int code, string expectedName)
         {
             var error = new AgeSignalsError { errorCode = code };
