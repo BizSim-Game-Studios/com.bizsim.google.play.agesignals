@@ -261,6 +261,19 @@ namespace BizSim.Google.Play.AgeSignals
         }
 
         /// <summary>
+        /// Replaces the decision logic that turns the API result into
+        /// <see cref="AgeRestrictionFlags"/>. Call it before <see cref="CheckAgeSignals"/>;
+        /// flags cached under a different logic configuration are discarded and
+        /// <see cref="CurrentFlags"/> is reloaded.
+        /// </summary>
+        /// <param name="logic">Decision logic asset or instance; must not be null.</param>
+        public void SetDecisionLogic(AgeSignalsDecisionLogic logic)
+        {
+            _decisionLogic = logic != null ? logic : throw new ArgumentNullException(nameof(logic));
+            if (_cacheProvider != null) LoadRestrictionFlags();
+        }
+
+        /// <summary>
         /// Clears cached restriction flags from storage (session-level clear).
         /// Use for logout flows where the user may return — the per-install
         /// encryption key identifier is preserved so subsequent saves can
@@ -762,7 +775,7 @@ namespace BizSim.Google.Play.AgeSignals
         /// <summary>
         /// Lazily creates a default <see cref="AgeSignalsDecisionLogic"/> instance
         /// when none is assigned via the Inspector. Uses default thresholds:
-        /// gambling 18+, marketplace 16+, chat 13+, personalized ads 13+.
+        /// gambling 18+, marketplace 16+, chat 13+.
         /// </summary>
         private void EnsureDecisionLogic()
         {

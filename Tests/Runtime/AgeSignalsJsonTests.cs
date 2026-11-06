@@ -176,7 +176,6 @@ namespace BizSim.Google.Play.AgeSignals.Tests
             {
                 FullAccessGranted = false,
                 AccessDenied = false,
-                PersonalizedAdsEnabled = false,
                 NeedsVerification = true,
                 DecisionTimestamp = "2026-01-30T12:00:00.0000000Z"
             };
@@ -189,7 +188,6 @@ namespace BizSim.Google.Play.AgeSignals.Tests
 
             Assert.AreEqual(original.FullAccessGranted, deserialized.FullAccessGranted);
             Assert.AreEqual(original.AccessDenied, deserialized.AccessDenied);
-            Assert.AreEqual(original.PersonalizedAdsEnabled, deserialized.PersonalizedAdsEnabled);
             Assert.AreEqual(original.NeedsVerification, deserialized.NeedsVerification);
             Assert.AreEqual(original.DecisionTimestamp, deserialized.DecisionTimestamp);
 

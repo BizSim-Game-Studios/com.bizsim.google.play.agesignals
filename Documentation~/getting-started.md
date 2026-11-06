@@ -48,8 +48,8 @@ public class AgeGate : MonoBehaviour
         var flags = await AgeSignalsController.Instance.CheckAgeSignalsAsync();
         if (flags.FullAccessGranted)
             Debug.Log("Full access granted");
-        else if (!flags.PersonalizedAdsEnabled)
-            Debug.Log("Personalized ads disabled — show contextual ads only");
+        else if (flags.NeedsVerification)
+            Debug.Log("Age verification needed");
     }
 }
 ```

@@ -644,12 +644,6 @@ namespace BizSim.Google.Play.AgeSignals.Editor
                     DrawFeatureRow(f.label, enabled, ageTag: ageTag);
                 }
 
-                EditorGUILayout.Space(6);
-
-                // ── Ads section ──
-                DrawSectionLabel("Ads");
-                DrawFeatureRow("Personalized ads", flags.PersonalizedAdsEnabled, ageTag: "13+ COPPA");
-
                 EndCardContent();
             }
             EndCard();

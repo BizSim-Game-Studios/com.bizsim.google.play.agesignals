@@ -41,7 +41,6 @@ namespace BizSim.Google.Play.AgeSignals.Tests
             Assert.IsTrue(flags.IsFeatureEnabled(AgeFeatureKeys.Gambling));
             Assert.IsTrue(flags.IsFeatureEnabled(AgeFeatureKeys.Marketplace));
             Assert.IsTrue(flags.IsFeatureEnabled(AgeFeatureKeys.Chat));
-            Assert.IsTrue(flags.PersonalizedAdsEnabled);
             Assert.IsFalse(flags.AccessDenied);
         }
 
@@ -69,7 +68,6 @@ namespace BizSim.Google.Play.AgeSignals.Tests
 
             Assert.IsTrue(flags.FullAccessGranted);
             Assert.IsTrue(flags.IsFeatureEnabled(AgeFeatureKeys.Gambling));
-            Assert.IsTrue(flags.PersonalizedAdsEnabled);
             Assert.IsFalse(flags.NeedsVerification);
             Assert.IsFalse(flags.AccessDenied);
         }
@@ -91,7 +89,6 @@ namespace BizSim.Google.Play.AgeSignals.Tests
             _logic.ComputeFlags(result, flags);
 
             Assert.IsFalse(flags.FullAccessGranted);
-            Assert.IsFalse(flags.PersonalizedAdsEnabled);
             Assert.IsTrue(flags.NeedsVerification);
         }
 
@@ -113,7 +110,6 @@ namespace BizSim.Google.Play.AgeSignals.Tests
             Assert.IsFalse(flags.IsFeatureEnabled(AgeFeatureKeys.Gambling));
             Assert.IsFalse(flags.IsFeatureEnabled(AgeFeatureKeys.Marketplace));
             Assert.IsFalse(flags.IsFeatureEnabled(AgeFeatureKeys.Chat));
-            Assert.IsFalse(flags.PersonalizedAdsEnabled);
         }
 
         [Test]
@@ -133,7 +129,6 @@ namespace BizSim.Google.Play.AgeSignals.Tests
             Assert.IsFalse(flags.IsFeatureEnabled(AgeFeatureKeys.Gambling));
             Assert.IsFalse(flags.IsFeatureEnabled(AgeFeatureKeys.Marketplace));
             Assert.IsTrue(flags.IsFeatureEnabled(AgeFeatureKeys.Chat));
-            Assert.IsTrue(flags.PersonalizedAdsEnabled);
         }
 
         [Test]
@@ -174,7 +169,6 @@ namespace BizSim.Google.Play.AgeSignals.Tests
             Assert.IsFalse(flags.IsFeatureEnabled(AgeFeatureKeys.Gambling));
             Assert.IsFalse(flags.IsFeatureEnabled(AgeFeatureKeys.Marketplace));
             Assert.IsFalse(flags.IsFeatureEnabled(AgeFeatureKeys.Chat));
-            Assert.IsFalse(flags.PersonalizedAdsEnabled);
         }
 
         [Test]
@@ -244,7 +238,6 @@ namespace BizSim.Google.Play.AgeSignals.Tests
             Assert.IsFalse(flags.IsFeatureEnabled(AgeFeatureKeys.Gambling));
             Assert.IsFalse(flags.IsFeatureEnabled(AgeFeatureKeys.Marketplace));
             Assert.IsFalse(flags.IsFeatureEnabled(AgeFeatureKeys.Chat));
-            Assert.IsFalse(flags.PersonalizedAdsEnabled);
             Assert.IsTrue(flags.NeedsVerification);
         }
 
@@ -266,7 +259,6 @@ namespace BizSim.Google.Play.AgeSignals.Tests
             Assert.IsFalse(flags.FullAccessGranted);
             Assert.IsFalse(flags.IsFeatureEnabled(AgeFeatureKeys.Marketplace));
             Assert.IsFalse(flags.IsFeatureEnabled(AgeFeatureKeys.Chat));
-            Assert.IsFalse(flags.PersonalizedAdsEnabled);
             Assert.IsTrue(flags.NeedsVerification);
         }
 
@@ -320,7 +312,7 @@ namespace BizSim.Google.Play.AgeSignals.Tests
             string hash1 = _logic.ComputeConfigHash();
             string hash2 = _logic.ComputeConfigHash();
             Assert.AreEqual(hash1, hash2, "Same config should produce identical hashes");
-            Assert.IsTrue(hash1.StartsWith("v1|"), "Hash should start with version prefix");
+            Assert.IsTrue(hash1.StartsWith("v2|"), "Hash should start with version prefix");
         }
 
         [Test]

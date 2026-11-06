@@ -103,7 +103,6 @@ namespace BizSim.Google.Play.AgeSignals
 
             GUILayout.Label($"Full Access: {flags.FullAccessGranted}");
             GUILayout.Label($"Access Denied: {flags.AccessDenied}");
-            GUILayout.Label($"Personalized Ads: {flags.PersonalizedAdsEnabled}");
             GUILayout.Label($"Needs Verification: {flags.NeedsVerification}");
 
             if (flags.Features != null && flags.Features.Count > 0)

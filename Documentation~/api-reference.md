@@ -40,7 +40,6 @@ raw age data.
 |----------|------|-------------|
 | `FullAccessGranted` | `bool` | User has unrestricted access |
 | `AccessDenied` | `bool` | User is below minimum threshold |
-| `PersonalizedAdsEnabled` | `bool` | Personalized ads are permitted |
 | `GamblingEnabled` | `bool` | Gambling features are permitted |
 | `MarketplaceEnabled` | `bool` | Marketplace features are permitted |
 | `ChatEnabled` | `bool` | Chat features are permitted |

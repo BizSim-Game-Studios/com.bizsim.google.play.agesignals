@@ -46,7 +46,6 @@ namespace BizSim.Google.Play.AgeSignals.EditorTests
             var original = new AgeRestrictionFlags
             {
                 FullAccessGranted = true,
-                PersonalizedAdsEnabled = true,
                 NeedsVerification = false,
                 DecisionTimestamp = "2026-01-30T12:00:00Z",
                 ConfigHash = "v1|ads=13|gambling:18:1"
@@ -59,7 +58,6 @@ namespace BizSim.Google.Play.AgeSignals.EditorTests
 
             Assert.IsNotNull(loaded);
             Assert.AreEqual(original.FullAccessGranted, loaded.FullAccessGranted);
-            Assert.AreEqual(original.PersonalizedAdsEnabled, loaded.PersonalizedAdsEnabled);
             Assert.AreEqual(original.DecisionTimestamp, loaded.DecisionTimestamp);
             Assert.AreEqual(original.ConfigHash, loaded.ConfigHash);
             Assert.IsTrue(loaded.IsFeatureEnabled(AgeFeatureKeys.Gambling));
@@ -131,7 +129,6 @@ namespace BizSim.Google.Play.AgeSignals.EditorTests
             {
                 FullAccessGranted = false,
                 AccessDenied = false,
-                PersonalizedAdsEnabled = true,
                 NeedsVerification = true,
                 DecisionTimestamp = "2026-01-30T12:00:00Z",
                 ConfigHash = "v1|ads=13|gambling:18:1|marketplace:16:0|chat:13:0"
@@ -145,7 +142,6 @@ namespace BizSim.Google.Play.AgeSignals.EditorTests
 
             Assert.IsNotNull(loaded);
             Assert.AreEqual(original.FullAccessGranted, loaded.FullAccessGranted);
-            Assert.AreEqual(original.PersonalizedAdsEnabled, loaded.PersonalizedAdsEnabled);
             Assert.AreEqual(original.NeedsVerification, loaded.NeedsVerification);
             Assert.AreEqual(original.ConfigHash, loaded.ConfigHash);
             Assert.IsFalse(loaded.IsFeatureEnabled(AgeFeatureKeys.Gambling));

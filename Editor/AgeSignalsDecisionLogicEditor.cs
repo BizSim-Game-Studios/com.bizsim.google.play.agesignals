@@ -31,7 +31,7 @@ namespace BizSim.Google.Play.AgeSignals.Editor
             var logic = (AgeSignalsDecisionLogic)target;
 
             // ═══════════════════════════════════════════
-            // Default Inspector (features list, ads threshold)
+            // Default Inspector (features list)
             // ═══════════════════════════════════════════
             DrawDefaultInspector();
 
@@ -93,7 +93,6 @@ namespace BizSim.Google.Play.AgeSignals.Editor
             EditorGUILayout.LabelField("How it works:", EditorStyles.boldLabel);
             DrawBullet("Add features below with a unique key, label, and minimum age.");
             DrawBullet("Toggle \"Requires Adult\" for features that need verified 18+ status.");
-            DrawBullet("The Ads Threshold sets the minimum age for personalized advertising (COPPA).");
             DrawBullet("At runtime, each feature is automatically enabled or disabled per player.");
 
             GUILayout.Space(8);
@@ -258,32 +257,6 @@ namespace BizSim.Google.Play.AgeSignals.Editor
                 };
                 EditorGUI.LabelField(new Rect(col4, rowRect.y, rowRect.xMax - col4, rowRect.height), adultText, adultStyle);
             }
-
-            // Ads row
-            GUILayout.Space(2);
-            var adsSepRect = EditorGUILayout.GetControlRect(false, 1);
-            EditorGUI.DrawRect(adsSepRect, SepColor);
-
-            var adsRect = EditorGUILayout.GetControlRect(false, 20);
-            col1 = adsRect.x;
-            col3 = adsRect.x + adsRect.width * 0.6f;
-            EditorGUI.LabelField(new Rect(col1, adsRect.y, col3 - col1, adsRect.height),
-                "Personalized Ads (COPPA)", new GUIStyle(EditorStyles.label)
-                {
-                    fontSize = 11,
-                    normal = { textColor = Muted },
-                    fontStyle = FontStyle.Italic
-                });
-
-            var adsAgeRect = new Rect(col3 + 4, adsRect.y + 3, 30, adsRect.height - 6);
-            EditorGUI.DrawRect(adsAgeRect, new Color(Green.r, Green.g, Green.b, 0.12f));
-            EditorGUI.LabelField(adsAgeRect, $"{logic.PersonalizedAdsMinAge}+", new GUIStyle(EditorStyles.miniLabel)
-            {
-                alignment = TextAnchor.MiddleCenter,
-                fontStyle = FontStyle.Bold,
-                fontSize = 9,
-                normal = { textColor = Green }
-            });
 
             GUILayout.Space(8);
             EditorGUILayout.EndVertical();

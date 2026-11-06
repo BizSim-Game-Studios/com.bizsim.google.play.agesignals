@@ -153,8 +153,6 @@ namespace BizSim.Google.Play.AgeSignals.EditorTests
                 "Default should not deny access — just restrict it");
             Assert.IsTrue(flags.NeedsVerification,
                 "Default must prompt for age verification");
-            Assert.IsFalse(flags.PersonalizedAdsEnabled,
-                "Default must NOT enable personalized ads (COPPA)");
         }
 
         [Test]

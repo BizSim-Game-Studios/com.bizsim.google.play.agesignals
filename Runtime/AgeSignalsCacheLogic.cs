@@ -108,7 +108,7 @@ namespace BizSim.Google.Play.AgeSignals
         /// <b>COPPA / Google Play Family Policy:</b> Defaults MUST be restrictive.
         /// If the device is offline or the API fails, we must not grant adult-level
         /// access to a potentially underage user. Age-gated features (gambling,
-        /// marketplace) and personalized ads remain disabled until the API explicitly
+        /// marketplace) remain disabled until the API explicitly
         /// confirms the user's age. Basic features (chat) are allowed at the 13+
         /// COPPA threshold — the API will restrict further if the user is under 13.
         /// </summary>
@@ -118,7 +118,6 @@ namespace BizSim.Google.Play.AgeSignals
             {
                 FullAccessGranted = false,
                 AccessDenied = false,           // Not denied — just not yet verified
-                PersonalizedAdsEnabled = false,  // COPPA: no personalized ads until verified
                 NeedsVerification = true,        // Prompt user to verify age
                 DecisionTimestamp = DateTime.UtcNow.ToString("o")
             };

@@ -304,9 +304,6 @@ namespace BizSim.Google.Play.AgeSignals
         /// <summary>Access denied (parental approval was explicitly rejected).</summary>
         public bool AccessDenied;
 
-        /// <summary>Whether personalized advertising is allowed for this user.</summary>
-        public bool PersonalizedAdsEnabled;
-
         /// <summary>True when user status is Unknown — consider prompting for verification.</summary>
         public bool NeedsVerification;
 

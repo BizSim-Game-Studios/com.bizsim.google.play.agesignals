@@ -47,8 +47,7 @@ public class AgeGateSample : MonoBehaviour
 
     private void HandleRestrictions(AgeRestrictionFlags flags)
     {
-        Debug.Log($"[AgeGate] Restrictions received: FullAccess={flags.FullAccessGranted}, " +
-                  $"PersonalizedAds={flags.PersonalizedAdsEnabled}");
+        Debug.Log($"[AgeGate] Restrictions received: FullAccess={flags.FullAccessGranted}");
 
         if (flags.AccessDenied)
         {
@@ -102,13 +101,6 @@ public class AgeGateSample : MonoBehaviour
             Debug.Log("[AgeGate] Chat / Social — ENABLED");
         else
             Debug.Log("[AgeGate] Chat / Social — DISABLED");
-
-        if (!flags.PersonalizedAdsEnabled)
-        {
-            Debug.Log("[AgeGate] Personalized ads disabled — switching to contextual ads");
-            // Call your ad SDK to disable personalized ads
-            // e.g., MediationSettings.SetPersonalizedAds(false);
-        }
     }
 
     private void ShowAccessDenied()

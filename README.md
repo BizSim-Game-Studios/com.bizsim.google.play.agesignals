@@ -61,8 +61,8 @@ After the package imports, EDM is automatically installed by UPM — no manual `
                EnableAllFeatures();
            else if (flags.AccessDenied)
                ShowRestrictedScreen();
-           else if (!flags.PersonalizedAdsEnabled)
-               SwitchToContextualAds();
+           else if (flags.NeedsVerification)
+               ShowVerificationPrompt();
        }
 
        void OnError(AgeSignalsError error)
@@ -85,8 +85,8 @@ After the package imports, EDM is automatically installed by UPM — no manual `
 3. Read cached flags at any time after the first `CheckAgeSignals()` completes:
    ```csharp
    var flags = AgeSignalsController.Instance.CurrentFlags;
-   if (flags != null && !flags.PersonalizedAdsEnabled)
-       ShowContextualAdsOnly();
+   if (flags != null && !flags.IsFeatureEnabled(AgeFeatureKeys.Chat))
+       HideChat();
    ```
 
 4. Use the async API for structured error handling:
@@ -94,7 +94,7 @@ After the package imports, EDM is automatically installed by UPM — no manual `
    try
    {
        var flags = await AgeSignalsController.Instance.CheckAgeSignalsAsync();
-       if (!flags.PersonalizedAdsEnabled) SwitchToContextualAds();
+       if (!flags.IsFeatureEnabled(AgeFeatureKeys.Chat)) HideChat();
    }
    catch (AgeSignalsException ex)
    {
@@ -125,7 +125,7 @@ Key types:
 This package enforces a strict three-layer privacy model:
 
 - **Raw age data** (`AgeSignalsResult`) exists **in memory only** — it is never written to disk, logs, or network in any form.
-- **Derived behavior flags** (`AgeRestrictionFlags`) are the only persisted state. They are written to an encrypted `PlayerPrefs` key and contain no age value — only boolean capability flags (e.g. `PersonalizedAdsEnabled`, `FullAccessGranted`).
+- **Derived behavior flags** (`AgeRestrictionFlags`) are the only persisted state. They are written to an encrypted `PlayerPrefs` key and contain no age value — only boolean capability flags (e.g. `FullAccessGranted`, `NeedsVerification`).
 - **Analytics events** report only technical success/failure signals — zero age or demographic information is transmitted.
 
 This split means a data breach of `PlayerPrefs` reveals nothing about the user's age. The `IAgeSignalsCacheProvider` interface lets you substitute your own storage backend; any custom implementation must preserve the same raw/derived split.

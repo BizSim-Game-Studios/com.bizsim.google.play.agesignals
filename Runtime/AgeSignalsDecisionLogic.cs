@@ -25,8 +25,9 @@ namespace BizSim.Google.Play.AgeSignals
         //     Art. 28(2) which restricts profiling of minors under 16 for commercial purposes.
         //   • 13+ — Chat / social features. Matches COPPA (16 CFR §312) "actual knowledge"
         //     threshold and Google Play Families Self-Certified Ads SDK Requirements.
-        //   • Personalized Ads = 13+ — COPPA safe harbor; users under 13 receive
-        //     non-personalized ads only (Google AdMob / IronSource COPPA tag).
+        //   • Ads are NOT part of this logic. The Age Signals result must not feed ad
+        //     personalization, marketing, profiling or analytics;
+        //     the game's ad path decides on its own consent and age-screen answer.
 
         [Header("Feature Definitions")]
         [Tooltip("List of age-gated features. Each defines a key, label, minimum age, and whether adult verification is required.")]
@@ -37,21 +38,12 @@ namespace BizSim.Google.Play.AgeSignals
             new AgeFeature { key = "chat", label = "Chat / Social", minAge = 13, requiresAdult = false }
         };
 
-        [Header("Ads Threshold")]
-        [Tooltip("Minimum age for personalized advertising (COPPA compliance = 13).")]
-        [Range(5, 25)]
-        [SerializeField] private int _personalizedAdsMinAge = 13;
-
         /// <summary>Read-only access to the configured features list (for Editor UI).</summary>
         public IReadOnlyList<AgeFeature> Features => _features;
 
-        /// <summary>Configured threshold for personalized ads.</summary>
-        public int PersonalizedAdsMinAge => _personalizedAdsMinAge;
-
         /// <summary>
         /// Resets features to the default set aligned with Google Play and COPPA policies:
-        /// gambling 18+ (requiresAdult), marketplace 16+ (EU DSA), chat 13+ (COPPA),
-        /// and personalized ads at 13+.
+        /// gambling 18+ (requiresAdult), marketplace 16+ (EU DSA), chat 13+ (COPPA).
         /// Called by Unity on asset creation and useful for factory reset scenarios.
         /// </summary>
         public void Reset()
@@ -62,7 +54,6 @@ namespace BizSim.Google.Play.AgeSignals
                 new() { key = "marketplace", label = "Trading / Marketplace", minAge = 16, requiresAdult = false },
                 new() { key = "chat", label = "Chat / Social", minAge = 13, requiresAdult = false }
             };
-            _personalizedAdsMinAge = 13;
         }
 
         /// <summary>
@@ -99,7 +90,6 @@ namespace BizSim.Google.Play.AgeSignals
             {
                 flags.AccessDenied = true;
                 flags.FullAccessGranted = false;
-                flags.PersonalizedAdsEnabled = false;
                 flags.NeedsVerification = false;
                 foreach (var feature in _features)
                     flags.SetFeature(feature.key, false);
@@ -136,7 +126,6 @@ namespace BizSim.Google.Play.AgeSignals
             if (failClosed)
             {
                 flags.FullAccessGranted = false;
-                flags.PersonalizedAdsEnabled = false;
                 flags.NeedsVerification = true;
                 foreach (var feature in _features)
                     flags.SetFeature(feature.key, false);
@@ -163,7 +152,6 @@ namespace BizSim.Google.Play.AgeSignals
                 flags.SetFeature(feature.key, enabled);
             }
 
-            flags.PersonalizedAdsEnabled = noData || !result.IsUnder(_personalizedAdsMinAge);
             // Self-declared adults still get a verification nudge (not verified for adult features).
             // No-data users are not nudged: there is nothing for them to verify.
             flags.NeedsVerification = !noData && result.IsDeclaredAdult;
@@ -177,7 +165,7 @@ namespace BizSim.Google.Play.AgeSignals
         public string ComputeConfigHash()
         {
             var sb = new System.Text.StringBuilder();
-            sb.Append("v1|ads=").Append(_personalizedAdsMinAge);
+            sb.Append("v2");
             if (_features != null)
             {
                 foreach (var f in _features)

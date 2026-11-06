@@ -83,12 +83,15 @@ Provider selection happens at compile time:
 
 ## Cache providers
 
-Two built-in cache providers:
+Built-in cache providers:
 
 - **`EncryptedPlayerPrefsCacheProvider`** (default) — encrypts flag values before storing
   in PlayerPrefs. Uses a per-device key.
 - **`PlayerPrefsCacheProvider`** — plain PlayerPrefs storage. Suitable for development
   and testing only.
+
+A third, **`MemoryAgeSignalsCacheProvider`**, keeps the flags in memory only (nothing is written to
+disk); plug it in with `SetCacheProvider` before the first check.
 
 Custom providers must implement `IAgeSignalsCacheProvider` and MUST persist only derived
 flags, never raw age data. This constraint is non-negotiable.

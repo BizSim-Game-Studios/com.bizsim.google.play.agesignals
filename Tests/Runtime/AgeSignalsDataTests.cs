@@ -109,7 +109,6 @@ namespace BizSim.Google.Play.AgeSignals.Tests
             var flags = new AgeRestrictionFlags
             {
                 FullAccessGranted = true,
-                PersonalizedAdsEnabled = true,
                 NeedsVerification = false
             };
             flags.SetFeature(AgeFeatureKeys.Gambling, true);
@@ -117,7 +116,6 @@ namespace BizSim.Google.Play.AgeSignals.Tests
             flags.SetFeature(AgeFeatureKeys.Chat, true);
 
             Assert.IsTrue(flags.FullAccessGranted);
-            Assert.IsTrue(flags.PersonalizedAdsEnabled);
             Assert.IsFalse(flags.AccessDenied);
         }
 
