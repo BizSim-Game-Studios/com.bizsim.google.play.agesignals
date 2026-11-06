@@ -5,6 +5,25 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [3.1.0] - 2026-11-06
+
+### Changed
+- **Behaviour change:** the default cache is now memory-only (`AgeSignalsCacheMode.Memory`). Nothing
+  derived from the Age Signals result is written to the device unless the game opts in with
+  `AgeSignalsCacheMode.PlayerPrefs` / `EncryptedPlayerPrefs` (Inspector) or `SetCacheProvider`. The Inspector
+  field `_useEncryptedCache` is replaced by `_cacheMode`; scenes that had it set fall back to memory. In memory
+  mode the controller deletes flags an earlier version stored in `PlayerPrefs` (plain and encrypted). Every launch
+  starts from the restrictive defaults until the first API answer.
+
+### Fixed
+- Tests expected SCREAMING_CASE error-code names; `AgeSignalsError.ErrorCodeName` returns the enum names since 2.0.0.
+
+### Porting (users of this package)
+- JYT (pinned to 7613d56 = 2.0.0), Knock Knock Cat and Rise of Companies (local `file:` references, so they see the
+  new version on disk at once): drop any use of `PersonalizedAdsEnabled` (removed in 3.0.0); check that nothing relies
+  on flags surviving a restart; to keep them on disk, choose a persistent `AgeSignalsCacheMode` explicitly.
+  Pirate Smash does not use this package.
+
 ## [3.0.0] - 2026-11-06
 
 ### Added
